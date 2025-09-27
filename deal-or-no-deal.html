@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shill or No Shill - Host Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* Left Column - Monetary Values */
+        .values-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #ffd700;
+            overflow-y: auto;
+        }
+
+        .values-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .value-item {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1e3c72;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: 2px solid #ffd700;
+        }
+
+        .value-item.eliminated {
+            background: linear-gradient(45deg, #666, #999);
+            color: #ccc;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .value-item.highlight {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+
+        /* Center Column - Cases and Controls */
+        .game-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #ffd700;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-title img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.7));
+        }
+
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        .case {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1e3c72;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 60px;
+        }
+
+        .case:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .case.opened {
+            background: linear-gradient(45deg, #333, #555);
+            color: #ffd700;
+            animation: reveal 0.5s ease;
+        }
+
+        .case.selected {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        @keyframes reveal {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .new-game-btn {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            color: white;
+        }
+
+        .new-game-btn:hover {
+            background: linear-gradient(45deg, #45a049, #5cb860);
+            transform: translateY(-2px);
+        }
+
+        .settings-btn {
+            background: linear-gradient(45deg, #9C27B0, #E91E63);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .settings-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+
+        .settings-btn:hover::before {
+            animation: shine 0.6s ease-out;
+            opacity: 1;
+        }
+
+        .settings-btn:hover {
+            background: linear-gradient(45deg, #7B1FA2, #C2185B);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.4);
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .game-status {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        /* Right Column - Controller and History */
+        .controller-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #ffd700;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controller-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .offer-section {
+            margin-bottom: 20px;
+        }
+
+        .offer-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            background: rgba(255, 215, 0, 0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .offer-input::placeholder {
+            color: rgba(255, 215, 0, 0.7);
+        }
+
+        .set-offer-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .suggested-offer {
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: #2196F3;
+            display: none; /* Hidden since only manual offers are used */
+        }
+
+        .last-value {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .last-value-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .history-section {
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 5px;
+            padding: 8px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .history-offer {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .history-decision {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .history-decision.reject {
+            color: #f44336;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+                padding: 5px;
+            }
+
+            .values-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .cases-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .game-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .control-btn {
+                padding: 15px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .control-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .settings-btn span {
+                font-size: 14px;
+            }
+
+            .cases-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .values-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Column - Monetary Values -->
+        <div class="values-panel">
+            <div class="values-title">REMAINING VALUES</div>
+            <div class="values-grid" id="valuesGrid">
+                <!-- Values will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Center Column - Cases and Game Controls -->
+        <div class="game-panel">
+            <div class="game-title">SHILL OR NO SHILL</div>
+
+            <div class="cases-grid" id="casesGrid">
+                <!-- Cases will be populated by JavaScript -->
+            </div>
+
+            <div class="game-controls">
+                <button class="control-btn new-game-btn" onclick="startNewGame()">NEW GAME</button>
+                <button class="control-btn settings-btn" onclick="openGameMasterSettings()" title="Game Master Settings">
+                    <span style="font-size: 16px;">⚙️</span> SETTINGS
+                </button>
+            </div>
+
+            <div class="game-status">
+                <div class="status-text" id="gameStatus">Select your case to begin!</div>
+            </div>
+        </div>
+
+        <!-- Right Column - Controller and History -->
+        <div class="controller-panel">
+            <div class="controller-title">HOST CONTROLLER</div>
+
+            <div class="offer-section">
+                <input type="number" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($)" min="0" step="100">
+                <button class="set-offer-btn" onclick="setManualOffer()">SET OFFER</button>
+                <div class="suggested-offer" id="suggestedOffer">Suggested: Calculating...</div>
+            </div>
+
+            <div class="last-value">
+                <div class="last-value-text" id="lastValue">Last Opened: None</div>
+            </div>
+
+            <div class="history-section">
+                <div class="history-title">PROPOSITION HISTORY</div>
+                <div class="history-list" id="historyList">
+                    <!-- History items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            cases: [],
+            values: [],
+            remainingValues: [],
+            playerCase: null,
+            currentRound: 1,
+            casesToOpen: 6,
+            casesOpened: 0,
+            gameActive: false,
+            offerHistory: [],
+            offerMadeThisRound: false
+        };
+
+        // Standard Deal or No Deal values (base values before scaling)
+        const BASE_STANDARD_VALUES = [
+            0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750,
+            1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000
+        ];
+
+        // Game Master Settings (loaded from localStorage)
+        let gameMasterSettings = null;
+
+        // Load Game Master Settings from localStorage
+        function loadGameMasterSettings() {
+            const savedSettings = localStorage.getItem('shillOrNoShillSettings');
+            if (savedSettings) {
+                try {
+                    gameMasterSettings = JSON.parse(savedSettings);
+                    console.log('Loaded Game Master Settings:', gameMasterSettings);
+                    return true;
+                } catch (e) {
+                    console.error('Error loading Game Master Settings:', e);
+                    gameMasterSettings = null;
+                    return false;
+                }
+            }
+            console.log('No Game Master Settings found, using defaults');
+            gameMasterSettings = null;
+            return false;
+        }
+
+
+
+        // Apply Game Master Settings to game
+        function applyGameMasterSettings() {
+            if (!gameMasterSettings) return;
+
+            // Apply prize scale multiplier
+            if (gameMasterSettings.prizeScaleMultiplier && gameMasterSettings.prizeScaleMultiplier > 0) {
+                const scaleFactor = gameMasterSettings.prizeScaleMultiplier;
+                gameState.values = BASE_STANDARD_VALUES.map(value => Math.round(value * scaleFactor * 100) / 100);
+                console.log(`Applied prize scale multiplier: ${scaleFactor}x`);
+            }
+
+            // Apply number of cases (if different from default 26)
+            if (gameMasterSettings.numberOfCases && gameMasterSettings.numberOfCases !== 26) {
+                const numCases = Math.max(10, Math.min(50, gameMasterSettings.numberOfCases));
+                // Recreate cases array with new count
+                gameState.cases = Array.from({length: numCases}, (_, i) => ({
+                    number: i + 1,
+                    opened: false,
+                    value: null
+                }));
+                console.log(`Applied number of cases: ${numCases}`);
+            }
+
+            // Apply case opening sequence
+            if (gameMasterSettings.caseOpeningSequence && gameMasterSettings.caseOpeningSequence.length > 0) {
+                // Store the custom sequence for use in rounds
+                gameState.customOpeningSequence = [...gameMasterSettings.caseOpeningSequence];
+                console.log('Applied custom case opening sequence:', gameState.customOpeningSequence);
+            }
+
+            // Apply zero-amount cases (traps)
+            if (gameMasterSettings.zeroAmountCases !== undefined) {
+                gameState.zeroAmountCases = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
+                // Force the lowest values to be trap amounts (fixed at $0.01) regardless of scale
+                if (Array.isArray(gameState.values) && gameState.values.length > 0) {
+                    const sorted = [...gameState.values].sort((a, b) => a - b);
+                    for (let i = 0; i < gameState.zeroAmountCases && i < sorted.length; i++) {
+                        sorted[i] = 0.01;
+                    }
+                    gameState.values = sorted;
+                }
+                console.log(`Applied zero-amount cases (traps): ${gameState.zeroAmountCases}`);
+            }
+        }
+
+        // Initialize the game
+        function initializeGame() {
+            // Load Game Master Settings first
+            loadGameMasterSettings();
+
+            // Create cases (default 26 or from settings)
+            const numCases = gameMasterSettings?.numberOfCases || 26;
+            gameState.cases = Array.from({length: numCases}, (_, i) => ({
+                number: i + 1,
+                opened: false,
+                value: null
+            }));
+
+            // Apply settings to modify game values and structure
+            applyGameMasterSettings();
+
+            // Shuffle and assign values
+            gameState.values = [...gameState.values].sort(() => Math.random() - 0.5);
+            gameState.remainingValues = [...gameState.values];
+
+            // Update UI
+            updateValuesGrid();
+            updateCasesGrid();
+            updateSuggestedOffer();
+        }
+
+        // Update the values grid
+        function updateValuesGrid() {
+            const valuesGrid = document.getElementById('valuesGrid');
+            valuesGrid.innerHTML = '';
+
+            gameState.values.forEach((value, index) => {
+                const valueItem = document.createElement('div');
+                valueItem.className = 'value-item';
+                valueItem.textContent = formatCurrency(value);
+                valueItem.dataset.index = index;
+
+                if (!gameState.remainingValues.includes(value)) {
+                    valueItem.classList.add('eliminated');
+                }
+
+                valuesGrid.appendChild(valueItem);
+            });
+        }
+
+        // Update the cases grid
+        function updateCasesGrid() {
+            const casesGrid = document.getElementById('casesGrid');
+            casesGrid.innerHTML = '';
+
+            gameState.cases.forEach(caseData => {
+                const caseElement = document.createElement('div');
+                caseElement.className = 'case';
+                caseElement.textContent = caseData.number;
+                caseElement.dataset.caseNumber = caseData.number;
+
+                if (caseData.opened) {
+                    caseElement.classList.add('opened');
+                    caseElement.textContent = formatCurrency(caseData.value);
+                } else if (gameState.playerCase === caseData.number) {
+                    caseElement.classList.add('selected');
+                }
+
+                caseElement.onclick = () => selectCase(caseData.number);
+                casesGrid.appendChild(caseElement);
+            });
+        }
+
+        // Select a case
+        function selectCase(caseNumber) {
+            // Don't allow case selection if game is not active or if decision buttons are showing
+            if (!gameState.gameActive) {
+                // Player selecting their case
+                gameState.playerCase = caseNumber;
+                gameState.gameActive = true;
+                document.getElementById('gameStatus').textContent = `Open ${gameState.casesToOpen} cases to receive first offer`;
+
+                // Remove player's case from available cases
+                const playerCaseIndex = gameState.cases.findIndex(c => c.number === caseNumber);
+                if (playerCaseIndex !== -1) {
+                    gameState.cases[playerCaseIndex].selected = true;
+                }
+
+                updateCasesGrid();
+                return;
+            }
+
+            // Check if decision buttons are currently showing (player needs to make a decision)
+            const gameStatus = document.getElementById('gameStatus');
+            const decisionButtons = gameStatus.querySelector('.decision-buttons');
+            if (decisionButtons) {
+                // Player needs to make a decision first
+                document.getElementById('gameStatus').textContent = 'Please make a decision on the offer first!';
+                return;
+            }
+
+            // Opening cases during game - only allow if still need to open cases in current round
+            if (gameState.casesOpened < gameState.casesToOpen) {
+                const caseData = gameState.cases.find(c => c.number === caseNumber);
+                if (caseData && !caseData.opened && caseData.number !== gameState.playerCase) {
+                    openCase(caseNumber);
+                } else if (caseData && caseData.number === gameState.playerCase) {
+                    document.getElementById('gameStatus').textContent = "You cannot open your own case!";
+                } else if (caseData && caseData.opened) {
+                    document.getElementById('gameStatus').textContent = "This case is already opened!";
+                }
+            } else {
+                document.getElementById('gameStatus').textContent = 'Round complete - Enter offer above and click SET OFFER';
+            }
+        }
+
+        // Open a case
+        function openCase(caseNumber) {
+            const caseIndex = gameState.cases.findIndex(c => c.number === caseNumber);
+            if (caseIndex === -1) return;
+
+            // Assign value to case (in a real game, this would be predetermined)
+            if (!gameState.cases[caseIndex].value) {
+                gameState.cases[caseIndex].value = gameState.values[gameState.values.length - gameState.remainingValues.length];
+            }
+
+            gameState.cases[caseIndex].opened = true;
+            const openedValue = gameState.cases[caseIndex].value;
+
+            // Remove from remaining values
+            const valueIndex = gameState.remainingValues.indexOf(openedValue);
+            if (valueIndex !== -1) {
+                gameState.remainingValues.splice(valueIndex, 1);
+            }
+
+            // Update last value display
+            document.getElementById('lastValue').textContent = `Last Opened: ${formatCurrency(openedValue)}`;
+
+            // Highlight the opened value
+            highlightValue(openedValue);
+
+            gameState.casesOpened++;
+
+            // Check if round is complete
+            if (gameState.casesOpened >= gameState.casesToOpen) {
+                // Round complete - only show status, host will manually set offer
+                document.getElementById('gameStatus').textContent = 'Round complete - Enter offer above and click SET OFFER';
+            } else {
+                updateGameStatus();
+            }
+
+            updateCasesGrid();
+            updateValuesGrid();
+            updateSuggestedOffer();
+        }
+
+        // Highlight opened value temporarily
+        function highlightValue(value) {
+            const valueItems = document.querySelectorAll('.value-item');
+            valueItems.forEach(item => {
+                if (item.textContent === formatCurrency(value)) {
+                    item.classList.add('highlight');
+                    setTimeout(() => {
+                        item.classList.remove('highlight');
+                    }, 2000);
+                }
+            });
+        }
+
+        // Update game status
+        function updateGameStatus() {
+            const remaining = gameState.casesToOpen - gameState.casesOpened;
+            if (remaining > 0) {
+                document.getElementById('gameStatus').textContent = `${remaining} more cases to open for offer`;
+            }
+        }
+
+        // Calculate suggested offer
+        function calculateSuggestedOffer() {
+            if (gameState.remainingValues.length === 0) return 0;
+
+            const sum = gameState.remainingValues.reduce((a, b) => a + b, 0);
+            return Math.round(sum / gameState.remainingValues.length);
+        }
+
+        // Update suggested offer display
+        function updateSuggestedOffer() {
+            const suggested = calculateSuggestedOffer();
+            document.getElementById('suggestedOffer').textContent = `Suggested: ${formatCurrency(suggested)}`;
+        }
+
+        // Make an offer (only manual offers allowed)
+        function makeOffer() {
+            const manualOfferInput = document.getElementById('manualOffer');
+            const manualOffer = parseFloat(manualOfferInput.value);
+
+            // Only allow manual offers - no automatic generation
+            if (!manualOffer || manualOffer <= 0) {
+                document.getElementById('gameStatus').textContent = 'Please enter a manual offer first';
+                return;
+            }
+
+            const offerAmount = manualOffer;
+            manualOfferInput.value = ''; // Clear input
+
+            // Prevent duplicate offers in same round
+            if (gameState.offerMadeThisRound) {
+                return;
+            }
+            gameState.offerMadeThisRound = true;
+
+            // Show offer to player (in real implementation, this would be on a separate display)
+            document.getElementById('gameStatus').textContent = `Banker's Offer: ${formatCurrency(offerAmount)}`;
+
+            // Add to history
+            const offerData = {
+                round: gameState.currentRound,
+                offer: offerAmount,
+                decision: null
+            };
+
+            gameState.offerHistory.push(offerData);
+
+            // Debug logging
+            console.log('Offer added to history:', offerData);
+            console.log('Current history array:', gameState.offerHistory);
+
+            updateHistory();
+
+            // Show decision buttons
+            showDecisionButtons();
+        }
+
+        // Set manual offer
+        function setManualOffer() {
+            const manualOfferInput = document.getElementById('manualOffer');
+            const offer = parseFloat(manualOfferInput.value);
+
+            if (offer > 0) {
+                makeOffer();
+            }
+        }
+
+        // Handle player's decision
+        function handleDecision(accepted) {
+            const lastOffer = gameState.offerHistory[gameState.offerHistory.length - 1];
+            if (lastOffer) {
+                lastOffer.decision = accepted ? 'ACCEPTED' : 'REJECTED';
+            }
+
+            if (accepted) {
+                endGame('ACCEPTED');
+            } else {
+                // Player declined - continue to next round
+                nextRound();
+            }
+
+            updateHistory();
+
+            // Remove decision buttons after decision is made
+            const gameStatus = document.getElementById('gameStatus');
+            const existingContainer = gameStatus.querySelector('.decision-buttons');
+            if (existingContainer) {
+                existingContainer.remove();
+            }
+        }
+
+        // Move to next round
+        function nextRound() {
+            gameState.currentRound++;
+            gameState.offerMadeThisRound = false; // Reset offer flag for new round
+
+            // Use custom case opening sequence if available, otherwise use default
+            if (gameState.customOpeningSequence && gameState.customOpeningSequence.length >= gameState.currentRound) {
+                gameState.casesToOpen = gameState.customOpeningSequence[gameState.currentRound - 1];
+                console.log(`Using custom sequence - Round ${gameState.currentRound}: ${gameState.casesToOpen} cases to open`);
+            } else {
+                // Fallback to default sequence
+                switch(gameState.currentRound) {
+                    case 2: gameState.casesToOpen = 5; break;
+                    case 3: gameState.casesToOpen = 4; break;
+                    case 4: gameState.casesToOpen = 3; break;
+                    case 5: gameState.casesToOpen = 2; break;
+                    case 6: gameState.casesToOpen = 1; break;
+                    case 7: gameState.casesToOpen = 1; break;
+                    case 8: gameState.casesToOpen = 1; break;
+                    case 9: gameState.casesToOpen = 1; break;
+                    default: gameState.casesToOpen = 1;
+                }
+                console.log(`Using default sequence - Round ${gameState.currentRound}: ${gameState.casesToOpen} cases to open`);
+            }
+
+            gameState.casesOpened = 0;
+            document.getElementById('gameStatus').textContent = `Round ${gameState.currentRound}: Open ${gameState.casesToOpen} cases`;
+        }
+
+        // End the game
+        function endGame(reason) {
+            gameState.gameActive = false;
+
+            if (reason === 'ACCEPTED') {
+                const lastOffer = gameState.offerHistory[gameState.offerHistory.length - 1];
+                document.getElementById('gameStatus').textContent = `SHILL! Player accepted ${formatCurrency(lastOffer.offer)}`;
+            } else {
+                // Reveal player's case
+                const playerCaseData = gameState.cases.find(c => c.number === gameState.playerCase);
+                document.getElementById('gameStatus').textContent = `NO SHILL! Player's case: ${formatCurrency(playerCaseData.value)}`;
+            }
+        }
+
+        // Update history display
+        function updateHistory() {
+            console.log('updateHistory() called');
+            console.log('Current offerHistory:', gameState.offerHistory);
+
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+
+            if (gameState.offerHistory.length === 0) {
+                console.log('No offers in history yet');
+                return;
+            }
+
+            gameState.offerHistory.slice().reverse().forEach((offer, index) => {
+                console.log('Processing offer for display:', offer);
+
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+
+                const decisionClass = offer.decision === 'ACCEPTED' ? 'accept' : 'reject';
+                historyItem.innerHTML = `
+                    <div>Round ${offer.round}: <span class="history-offer">${formatCurrency(offer.offer)}</span></div>
+                    <div>Decision: <span class="history-decision ${decisionClass}">${offer.decision || 'PENDING'}</span></div>
+                `;
+
+                historyList.appendChild(historyItem);
+            });
+
+            console.log('History display updated with', gameState.offerHistory.length, 'offers');
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            if (amount < 1) {
+                return `$${amount.toFixed(2)}`;
+            }
+            return `$${amount.toLocaleString()}`;
+        }
+
+        // Start new game
+        function startNewGame() {
+            gameState = {
+                cases: [],
+                values: [],
+                remainingValues: [],
+                playerCase: null,
+                currentRound: 1,
+                casesToOpen: 6,
+                casesOpened: 0,
+                gameActive: false,
+                offerHistory: [],
+                offerMadeThisRound: false
+            };
+
+            document.getElementById('lastValue').textContent = 'Last Opened: None';
+            document.getElementById('gameStatus').textContent = 'Select your case to begin!';
+            document.getElementById('historyList').innerHTML = '';
+
+            initializeGame();
+        }
+
+        // Show decision buttons after offer is made
+        function showDecisionButtons() {
+            const gameStatus = document.getElementById('gameStatus');
+
+            // Remove existing buttons first
+            const existingContainer = gameStatus.querySelector('.decision-buttons');
+            if (existingContainer) {
+                existingContainer.remove();
+            }
+
+            // Create new button container
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'decision-buttons';
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.gap = '15px';
+            buttonContainer.style.marginTop = '15px';
+            buttonContainer.style.justifyContent = 'center';
+
+            // Create DEAL button
+            const dealButton = document.createElement('button');
+            dealButton.textContent = 'SHILL';
+            dealButton.className = 'control-btn';
+            dealButton.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+            dealButton.style.color = 'white';
+            dealButton.style.padding = '12px 24px';
+            dealButton.style.fontSize = '16px';
+            dealButton.style.fontWeight = 'bold';
+            dealButton.style.borderRadius = '8px';
+            dealButton.style.border = 'none';
+            dealButton.style.cursor = 'pointer';
+            dealButton.style.transition = 'all 0.3s ease';
+            dealButton.onmouseover = () => dealButton.style.transform = 'translateY(-2px)';
+            dealButton.onmouseout = () => dealButton.style.transform = 'translateY(0)';
+            dealButton.onclick = () => handleDecision(true);
+
+            // Create NO DEAL button
+            const noDealButton = document.createElement('button');
+            noDealButton.textContent = 'NO SHILL';
+            noDealButton.className = 'control-btn';
+            noDealButton.style.background = 'linear-gradient(45deg, #f44336, #ef5350)';
+            noDealButton.style.color = 'white';
+            noDealButton.style.padding = '12px 24px';
+            noDealButton.style.fontSize = '16px';
+            noDealButton.style.fontWeight = 'bold';
+            noDealButton.style.borderRadius = '8px';
+            noDealButton.style.border = 'none';
+            noDealButton.style.cursor = 'pointer';
+            noDealButton.style.transition = 'all 0.3s ease';
+            noDealButton.onmouseover = () => noDealButton.style.transform = 'translateY(-2px)';
+            noDealButton.onmouseout = () => noDealButton.style.transform = 'translateY(0)';
+            noDealButton.onclick = () => handleDecision(false);
+
+            buttonContainer.appendChild(dealButton);
+            buttonContainer.appendChild(noDealButton);
+            gameStatus.appendChild(buttonContainer);
+        }
+
+        // Open Game Master Settings
+        function openGameMasterSettings() {
+            // Save current game state before opening settings
+            const currentGameState = {
+                gameState: gameState,
+                timestamp: new Date().toISOString()
+            };
+
+            // Store current state in sessionStorage for potential recovery
+            sessionStorage.setItem('shillOrNoShillGameState', JSON.stringify(currentGameState));
+
+            // Open Game Master Settings in a new window
+            const settingsWindow = window.open('game-master-settings.html', '_blank',
+                'width=1400,height=900,scrollbars=yes,resizable=yes');
+
+            if (settingsWindow) {
+                // Pass current game state to settings window
+                settingsWindow.onload = function() {
+                    settingsWindow.postMessage({
+                        type: 'currentGameState',
+                        gameState: gameState
+                    }, '*');
+                };
+
+                // Listener moved to global scope below to handle messages anytime
+            } else {
+                // Fallback if popup was blocked
+                document.getElementById('gameStatus').textContent = 'Please allow popups to access Game Master Settings';
+            }
+        }
+
+        // Handle incoming settings messages globally (from settings window or when launched from settings)
+        function handleSettingsMessage(event) {
+            const data = event.data || {};
+            if (data.type === 'settingsUpdated' || data.type === 'gameSettings') {
+                try {
+                    // Merge and persist settings
+                    gameMasterSettings = { ...(gameMasterSettings || {}), ...(data.settings || {}) };
+                    localStorage.setItem('shillOrNoShillSettings', JSON.stringify(gameMasterSettings));
+                    console.log('Applying incoming settings:', gameMasterSettings);
+
+                    // Reinitialize the game with new settings for real-time update
+                    initializeGame();
+
+                    // Visual confirmation
+                    const originalStatus = document.getElementById('gameStatus').textContent;
+                    document.getElementById('gameStatus').textContent = 'Settings applied to game!';
+                    document.getElementById('gameStatus').style.background = 'rgba(76, 175, 80, 0.3)';
+                    setTimeout(() => {
+                        document.getElementById('gameStatus').textContent = originalStatus;
+                        document.getElementById('gameStatus').style.background = '';
+                    }, 3000);
+                } catch (e) {
+                    console.error('Error applying incoming settings:', e);
+                }
+            }
+        }
+
+        // Register global listener once
+        window.addEventListener('message', handleSettingsMessage);
+
+        // Initialize the game when page loads
+        window.onload = function() {
+            initializeGame();
+        };
+    </script>
+</body>
+</html>

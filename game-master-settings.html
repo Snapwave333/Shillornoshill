@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shill or No Shill - Game Master Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(2deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #cccccc;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .settings-panel {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow:
+                0 8px 32px rgba(0, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .settings-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            animation: borderGlow 2s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 0%; }
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #00ffff;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .setting-group:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.1);
+        }
+
+        .setting-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-label::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .setting-description {
+            font-size: 0.85rem;
+            color: #aaaaaa;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .slider-container {
+            position: relative;
+            margin: 15px 0;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #333, #666);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .slider-value {
+            display: inline-block;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .setting-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stepper-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stepper-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .stepper-value {
+            min-width: 50px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00ffff;
+        }
+
+        .crypto-tokens {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .token-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .token-option:hover {
+            background: rgba(0, 255, 255, 0.1);
+            border-color: rgba(0, 255, 255, 0.3);
+        }
+
+        .token-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #00ffff;
+        }
+
+        .token-option.selected {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+        }
+
+        .token-symbol {
+            font-weight: bold;
+            color: #00ffff;
+            font-size: 0.9rem;
+        }
+
+        .token-name {
+            font-size: 0.8rem;
+            color: #cccccc;
+        }
+
+        .preview-section {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .preview-title {
+            font-size: 2rem;
+            color: #ffff00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        .settings-summary {
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #ffff00;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .action-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 200px;
+        }
+
+        .btn-save {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            color: white;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-launch {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-export {
+            background: linear-gradient(45deg, #FF9800, #FFC107);
+            color: #000;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .crypto-tokens {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Custom scrollbar */
+        .settings-summary::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .settings-summary::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .settings-summary::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border-radius: 10px;
+        }
+
+        .settings-summary::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #ff00ff, #ffff00);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Game Master Control Center</h1>
+            <p>Configure Your Shill or No Shill Experience</p>
+        </div>
+
+        <div class="settings-grid">
+            <!-- Prize Configuration Panel -->
+            <div class="settings-panel">
+                <h2 class="panel-title">Prize Configuration</h2>
+
+                <!-- Prize Scale Multiplier -->
+                <div class="setting-group">
+                    <label class="setting-label">
+                        Prize Scale Multiplier
+                    </label>
+                    <div class="setting-description">
+                        Adjusts the overall dollar value range of all prizes. The AI will scale all defined case values proportionally based on this setting.
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="prizeScaleSlider" min="1" max="100" value="1" oninput="updateSliderValue('prizeScaleSlider', 'prizeScaleValue')">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <span style="color: #888; font-size: 0.9rem;">1x</span>
+                            <span class="slider-value" id="prizeScaleValue">1x</span>
+                            <span style="color: #888; font-size: 0.9rem;">100x</span>
+            </div>
+        </div>
+
+                <!-- Number of Cases -->
+                <div class="setting-group">
+                    <label class="setting-label">
+                        Number of Cases
+                    </label>
+                    <div class="setting-description">
+                        Total number of briefcases available in the game.
+                    </div>
+                    <div class="stepper">
+                        <button class="stepper-btn" onclick="changeValue('numCases', -1)">-</button>
+                        <span class="stepper-value" id="numCases">26</span>
+                        <button class="stepper-btn" onclick="changeValue('numCases', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- Max $ Amount Boxes -->
+                <div class="setting-group">
+                    <label class="setting-label">
+                        High-Value Cases
+                    </label>
+                    <div class="setting-description">
+                        The number of high-value cases ($1,000 and up) to include in the randomized pool.
+                    </div>
+                    <div class="stepper">
+                        <button class="stepper-btn" onclick="changeValue('maxDollarBoxes', -1)">-</button>
+                        <span class="stepper-value" id="maxDollarBoxes">5</span>
+                        <button class="stepper-btn" onclick="changeValue('maxDollarBoxes', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- Zero-Amount Cases -->
+                <div class="setting-group">
+                    <label class="setting-label">
+                        Zero-Amount Cases (Traps)
+                    </label>
+                    <div class="setting-description">
+                        The number of cases that contain a $0.00 or $0.01 'trap' amount, adding tension.
+                    </div>
+                    <div class="stepper">
+                        <button class="stepper-btn" onclick="changeValue('zeroCases', -1)">-</button>
+                        <span class="stepper-value" id="zeroCases">1</span>
+                        <button class="stepper-btn" onclick="changeValue('zeroCases', 1)">+</button>
+            </div>
+        </div>
+
+            <!-- Game Flow Configuration Panel -->
+            <div class="settings-panel">
+                <h2 class="panel-title">Game Flow Configuration</h2>
+
+                <!-- Case Opening Sequence -->
+                <div class="setting-group">
+                    <label class="setting-label">
+                        Case Opening Sequence
+                    </label>
+                    <div class="setting-description">
+                        The sequence defining how many cases the player must open between each Banker's Offer.
+                    </div>
+                    <input type="text" class="setting-input" id="caseSequence" value="6, 5, 4, 3, 2, 1" placeholder="e.g., 5, 3, 2, 1, 1">
+                </div>
+
+                <!-- Banker Offer Aggressiveness -->
+                <!-- Banker settings removed -->
+
+                <!-- Cryptocurrency settings removed -->
+
+        <!-- Advanced Settings Panel -->
+        <div class="settings-panel">
+            <h2 class="panel-title">Advanced Configuration</h2>
+
+            <!-- Auto-Save Interval -->
+            <div class="setting-group">
+                <label class="setting-label">
+                    Auto-Save Interval
+                </label>
+                <div class="setting-description">
+                    Sets how frequently the game state is automatically saved to prevent data loss.
+                </div>
+                <select class="setting-input" id="autoSaveInterval" onchange="updateAutoSave()">
+                    <option value="30">Every 30 seconds</option>
+                    <option value="60" selected>Every 1 minute</option>
+                    <option value="120">Every 2 minutes</option>
+                    <option value="300">Every 5 minutes</option>
+                    <option value="600">Every 10 minutes</option>
+                    <option value="0">Manual save only</option>
+                </select>
+            </div>
+
+            <!-- Custom Case Content -->
+            <div class="setting-group">
+                <label class="setting-label">
+                    Custom Case Content
+                </label>
+                <div class="setting-description">
+                    Upload custom images and sound effects for specific cases. These will trigger when the case is opened during gameplay.
+                </div>
+
+                <div class="custom-case-config">
+                    <div class="case-selector">
+                        <label>Case Number:</label>
+                        <select class="setting-input" id="caseSelector" onchange="loadCaseConfig()">
+                            <option value="">Select a case...</option>
+                        </select>
+                    </div>
+
+                    <div class="case-customization" id="caseCustomization" style="display: none;">
+                        <div class="file-input-group">
+                            <label>Case Image:</label>
+                            <input type="file" id="caseImage" accept="image/*" onchange="previewCaseImage(this)">
+                            <div class="file-preview" id="imagePreview" style="display: none;">
+                                <img id="previewImg" src="" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                <button type="button" onclick="clearCaseImage()">Remove</button>
+                            </div>
+                        </div>
+
+                        <div class="file-input-group">
+                            <label>Sound Effect:</label>
+                            <input type="file" id="caseSound" accept="audio/*" onchange="previewCaseSound(this)">
+                            <div class="file-preview" id="soundPreview" style="display: none;">
+                                <audio id="previewAudio" controls style="max-width: 200px;"></audio>
+                                <button type="button" onclick="clearCaseSound()">Remove</button>
+                            </div>
+                        </div>
+
+                        <div class="case-actions">
+                            <button class="action-btn-small" onclick="saveCaseConfig()">Save Case Config</button>
+                            <button class="action-btn-small secondary" onclick="clearCaseConfig()">Clear Config</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="configured-cases" id="configuredCases">
+                    <h4>Configured Cases:</h4>
+                    <div id="casesList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
+                        <!-- Configured cases will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Preview -->
+        <div class="preview-section">
+            <h2 class="preview-title">Configuration Preview</h2>
+            <div class="settings-summary" id="settingsSummary">
+                Loading configuration preview...
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn btn-save" onclick="saveSettings()">Save Configuration</button>
+            <button class="action-btn btn-launch" onclick="launchGame()">Launch Game</button>
+            <button class="action-btn btn-export" onclick="exportSettings()">Export Settings</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Master Settings State
+        let gameSettings = {
+            prizeScaleMultiplier: 1,
+            numberOfCases: 26,
+            maxDollarBoxes: 5,
+            zeroAmountCases: 1,
+            caseOpeningSequence: [6, 5, 4, 3, 2, 1],
+
+
+            autoSaveInterval: 60,
+            customCaseContent: {} // Store custom images/sounds per case
+        };
+
+        // Current case being edited
+        let currentEditingCase = null;
+
+        // Cryptocurrency settings removed
+
+        // Initialize the page
+        function initializePage() {
+            loadSettings();
+            populateCaseSelector();
+            updateSettingsSummary();
+            setupAutoSave();
+        }
+
+        // Update slider values
+        function updateSliderValue(sliderId, valueId) {
+            const slider = document.getElementById(sliderId);
+            const valueElement = document.getElementById(valueId);
+
+            if (sliderId === 'prizeScaleSlider') {
+                gameSettings.prizeScaleMultiplier = parseInt(slider.value);
+                valueElement.textContent = slider.value + 'x';
+            }
+
+            updateSettingsSummary();
+        }
+
+        // Change stepper values
+        function changeValue(setting, delta) {
+            switch(setting) {
+                case 'numCases':
+                    gameSettings.numberOfCases = Math.max(10, Math.min(50, gameSettings.numberOfCases + delta));
+                    document.getElementById('numCases').textContent = gameSettings.numberOfCases;
+                    break;
+                case 'maxDollarBoxes':
+                    gameSettings.maxDollarBoxes = Math.max(1, Math.min(10, gameSettings.maxDollarBoxes + delta));
+                    document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
+                    break;
+                case 'zeroCases':
+                    gameSettings.zeroAmountCases = Math.max(0, Math.min(5, gameSettings.zeroAmountCases + delta));
+                    document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;
+                    break;
+            }
+            updateSettingsSummary();
+        }
+
+        // Cryptocurrency selection removed
+
+        // Update case opening sequence
+        function updateCaseSequence() {
+            const input = document.getElementById('caseSequence');
+            const sequence = input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+            gameSettings.caseOpeningSequence = sequence.length > 0 ? sequence : [6, 5, 4, 3, 2, 1];
+            updateSettingsSummary();
+        }
+
+        // Update settings summary
+        function updateSettingsSummary() {
+            const summary = document.getElementById('settingsSummary');
+
+            // Add event listener for case sequence input
+            const caseSequenceInput = document.getElementById('caseSequence');
+            caseSequenceInput.removeEventListener('input', updateCaseSequence);
+            caseSequenceInput.addEventListener('input', updateCaseSequence);
+
+            const baseValues = [0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000];
+            const scaledValues = baseValues.map(value => Math.round(value * gameSettings.prizeScaleMultiplier * 100) / 100);
+
+            summary.innerHTML = `
+                <div style="border-bottom: 1px solid rgba(255,255,0,0.3); padding-bottom: 15px; margin-bottom: 15px;">
+                    <strong>🎯 PRIZE CONFIGURATION</strong>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Prize Scale Multiplier:</strong> ${gameSettings.prizeScaleMultiplier}x
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Sample Scaled Values:</strong><br>
+                    <span style="font-size: 0.8rem; color: #ffaa00;">
+                        ${scaledValues.slice(0, 8).join(' → ')} → ... → ${scaledValues.slice(-3).join(' → ')}
+                    </span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Total Cases:</strong> ${gameSettings.numberOfCases}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>High-Value Cases (≥$1,000):</strong> ${gameSettings.maxDollarBoxes}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Zero-Amount Traps:</strong> ${gameSettings.zeroAmountCases}
+                </div>
+
+                <div style="border-bottom: 1px solid rgba(255,255,0,0.3); padding-bottom: 15px; margin-bottom: 15px; margin-top: 20px;">
+                    <strong>🎮 GAME FLOW</strong>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Opening Sequence:</strong> ${gameSettings.caseOpeningSequence.join(' → ')} cases per round
+                </div>
+                <!-- Banker and crypto summaries removed -->
+            `;
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('shillOrNoShillSettings', JSON.stringify(gameSettings));
+
+            // Visual feedback
+            const saveBtn = document.querySelector('.btn-save');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ SAVED!';
+            saveBtn.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '';
+            }, 2000);
+
+            console.log('Settings saved:', gameSettings);
+
+            // Notify the opener (game window) that settings have been updated
+            try {
+                if (window.opener && typeof window.opener.postMessage === 'function') {
+                    window.opener.postMessage({
+                        type: 'settingsUpdated',
+                        settings: gameSettings
+                    }, '*');
+                    console.log('Posted settingsUpdated message to opener');
+                }
+            } catch (e) {
+                console.warn('Could not post settingsUpdated to opener:', e);
+            }
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('shillOrNoShillSettings');
+            if (saved) {
+                try {
+                    const loadedSettings = JSON.parse(saved);
+                    gameSettings = { ...gameSettings, ...loadedSettings };
+
+                    // Update UI elements
+                    document.getElementById('prizeScaleSlider').value = gameSettings.prizeScaleMultiplier;
+                    document.getElementById('prizeScaleValue').textContent = gameSettings.prizeScaleMultiplier + 'x';
+                    document.getElementById('numCases').textContent = gameSettings.numberOfCases;
+                    document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
+                    document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;
+                    document.getElementById('caseSequence').value = gameSettings.caseOpeningSequence.join(', ');
+                    // Banker and crypto settings removed: no UI updates necessary
+
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+        }
+
+        // Launch game with current settings
+        function launchGame() {
+            // Save current settings first
+            saveSettings();
+
+            // Open the main game in a new window/tab with settings
+            const gameWindow = window.open('deal-or-no-deal.html', '_blank');
+
+            // Pass settings to the game window
+            if (gameWindow) {
+                gameWindow.onload = function() {
+                    gameWindow.postMessage({
+                        type: 'gameSettings',
+                        settings: gameSettings
+                    }, '*');
+                };
+            }
+        }
+
+        // Export settings as JSON
+        function exportSettings() {
+            const settingsJson = JSON.stringify(gameSettings, null, 2);
+            const blob = new Blob([settingsJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shill-or-no-shill-settings.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ===== AUTO-SAVE FUNCTIONALITY =====
+        let autoSaveTimer = null;
+
+        function setupAutoSave() {
+            if (autoSaveTimer) {
+                clearInterval(autoSaveTimer);
+            }
+
+            if (gameSettings.autoSaveInterval > 0) {
+                autoSaveTimer = setInterval(() => {
+                    saveSettings();
+                    console.log(`Auto-saved at ${new Date().toLocaleTimeString()}`);
+                }, gameSettings.autoSaveInterval * 1000);
+            }
+        }
+
+        function updateAutoSave() {
+            const select = document.getElementById('autoSaveInterval');
+            gameSettings.autoSaveInterval = parseInt(select.value);
+            setupAutoSave();
+            updateSettingsSummary();
+        }
+
+        // ===== CUSTOM CASE CONTENT FUNCTIONALITY =====
+        function populateCaseSelector() {
+            const selector = document.getElementById('caseSelector');
+            selector.innerHTML = '<option value="">Select a case...</option>';
+
+            for (let i = 1; i <= gameSettings.numberOfCases; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Case ${i}`;
+                selector.appendChild(option);
+            }
+        }
+
+        function loadCaseConfig() {
+            const selector = document.getElementById('caseSelector');
+            const caseNumber = parseInt(selector.value);
+
+            if (!caseNumber) {
+                document.getElementById('caseCustomization').style.display = 'none';
+                currentEditingCase = null;
+                return;
+            }
+
+            currentEditingCase = caseNumber;
+            const caseConfig = gameSettings.customCaseContent[caseNumber] || {};
+
+            document.getElementById('caseCustomization').style.display = 'block';
+
+            // Load existing image if any
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+
+            if (caseConfig.image) {
+                previewImg.src = caseConfig.image;
+                imagePreview.style.display = 'block';
+            } else {
+                imagePreview.style.display = 'none';
+            }
+
+            // Load existing sound if any
+            const soundPreview = document.getElementById('soundPreview');
+            const previewAudio = document.getElementById('previewAudio');
+
+            if (caseConfig.sound) {
+                previewAudio.src = caseConfig.sound;
+                soundPreview.style.display = 'block';
+            } else {
+                soundPreview.style.display = 'none';
+            }
+        }
+
+        function previewCaseImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('previewImg');
+                const imagePreview = document.getElementById('imagePreview');
+
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function previewCaseSound(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewAudio = document.getElementById('previewAudio');
+                const soundPreview = document.getElementById('soundPreview');
+
+                previewAudio.src = e.target.result;
+                soundPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearCaseImage() {
+            document.getElementById('caseImage').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        function clearCaseSound() {
+            document.getElementById('caseSound').value = '';
+            document.getElementById('soundPreview').style.display = 'none';
+        }
+
+        function saveCaseConfig() {
+            if (!currentEditingCase) return;
+
+            const caseConfig = {};
+
+            // Save image if uploaded
+            const imageInput = document.getElementById('caseImage');
+            if (imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    caseConfig.image = e.target.result;
+                    finalizeCaseConfig(currentEditingCase, caseConfig);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                // Keep existing image if no new one uploaded
+                caseConfig.image = gameSettings.customCaseContent[currentEditingCase]?.image || null;
+                finalizeCaseConfig(currentEditingCase, caseConfig);
+            }
+        }
+
+        function finalizeCaseConfig(caseNumber, caseConfig) {
+            // Save sound if uploaded
+            const soundInput = document.getElementById('caseSound');
+            if (soundInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    caseConfig.sound = e.target.result;
+                    completeCaseSave(caseNumber, caseConfig);
+                };
+                reader.readAsDataURL(soundInput.files[0]);
+            } else {
+                // Keep existing sound if no new one uploaded
+                caseConfig.sound = gameSettings.customCaseContent[caseNumber]?.sound || null;
+                completeCaseSave(caseNumber, caseConfig);
+            }
+        }
+
+        function completeCaseSave(caseNumber, caseConfig) {
+            // Only save if there's content
+            if (caseConfig.image || caseConfig.sound) {
+                gameSettings.customCaseContent[caseNumber] = caseConfig;
+            } else {
+                // Remove if no content
+                delete gameSettings.customCaseContent[caseNumber];
+            }
+
+            updateConfiguredCasesList();
+            saveSettings();
+
+            // Visual feedback
+            const saveBtn = document.querySelector('.case-actions .action-btn-small');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ SAVED!';
+            saveBtn.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '';
+            }, 1500);
+        }
+
+        function clearCaseConfig() {
+            if (!currentEditingCase) return;
+
+            delete gameSettings.customCaseContent[currentEditingCase];
+            updateConfiguredCasesList();
+            saveSettings();
+
+            // Clear form
+            document.getElementById('caseImage').value = '';
+            document.getElementById('caseSound').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('soundPreview').style.display = 'none';
+
+            // Visual feedback
+            const clearBtn = document.querySelector('.case-actions .secondary');
+            const originalText = clearBtn.textContent;
+            clearBtn.textContent = '🗑️ CLEARED!';
+            clearBtn.style.background = 'linear-gradient(45deg, #f44336, #ef5350)';
+
+            setTimeout(() => {
+                clearBtn.textContent = originalText;
+                clearBtn.style.background = '';
+            }, 1500);
+        }
+
+        function updateConfiguredCasesList() {
+            const casesList = document.getElementById('casesList');
+            casesList.innerHTML = '';
+
+            const configuredCases = Object.keys(gameSettings.customCaseContent);
+
+            if (configuredCases.length === 0) {
+                casesList.innerHTML = '<span style="color: #888; font-style: italic;">No custom cases configured</span>';
+                return;
+            }
+
+            configuredCases.forEach(caseNumber => {
+                const caseConfig = gameSettings.customCaseContent[caseNumber];
+                const caseTag = document.createElement('div');
+                caseTag.className = 'configured-case-tag';
+                caseTag.style.cssText = `
+                    display: inline-block;
+                    padding: 4px 8px;
+                    margin: 2px;
+                    background: rgba(0, 255, 255, 0.2);
+                    border: 1px solid rgba(0, 255, 255, 0.4);
+                    border-radius: 12px;
+                    font-size: 0.8rem;
+                    color: #00ffff;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+
+                const contentTypes = [];
+                if (caseConfig.image) contentTypes.push('📷');
+                if (caseConfig.sound) contentTypes.push('🔊');
+
+                caseTag.innerHTML = `Case ${caseNumber} ${contentTypes.join('')}`;
+                caseTag.onclick = () => {
+                    document.getElementById('caseSelector').value = caseNumber;
+                    loadCaseConfig();
+                };
+
+                casesList.appendChild(caseTag);
+            });
+        }
+
+        // Initialize when page loads
+        window.onload = initializePage;
+    </script>
+</body>
+</html>

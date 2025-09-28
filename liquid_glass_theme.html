@@ -212,6 +212,17 @@
       .nav-item:hover { opacity: 1; transform: translateX(2px); }
       .nav-item.active { opacity: 1; }
 
+      /* Modal (context window) */
+      .glass-modal { position: fixed; inset: 0; display: none; place-items: center; background: rgba(10,10,16,0.55); backdrop-filter: blur(14px) saturate(120%); -webkit-backdrop-filter: blur(14px) saturate(120%); z-index: 50; }
+      .glass-modal.show { display: grid; }
+      .modal-content { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.08); box-shadow: var(--outer-shadow); border-radius: 18px; width: min(740px, 92vw); max-height: 86vh; overflow: hidden; position: relative; }
+      .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+      .modal-body { padding: 16px; display: grid; gap: 12px; }
+      .close-btn { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+      .close-btn:hover { background: rgba(255,255,255,0.12); }
+      .modal-image { width: 100%; max-height: 50vh; object-fit: contain; border-radius: 12px; background: rgba(255,255,255,0.04); }
+      .modal-audio { width: 100%; }
+
       /* Responsive tweaks */
       @media (max-width: 640px) {
         .header { position: static; margin: 16px; }
@@ -331,6 +342,54 @@
         </div>
       </section>
     </div>
+
+    <!-- Case Media Attachments (Context Window) -->
+    <section class="glass-surface card pulse-hover" id="case-media-section">
+      <h3 class="card-title text-lg mb-2">Case Media Attachments</h3>
+      <p class="text-sm mb-4 opacity-90">Attach an image and a sound effect to a specific case. When the player selects that case, a popup will show the image and play the sound. Supports common image formats (PNG, JPG, JPEG, GIF, WEBP, SVG) and audio formats (MP3, WAV, OGG, M4A, AAC, FLAC).</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Case selection -->
+        <div>
+          <label class="text-sm opacity-80" for="caseSelect">Target Case</label>
+          <select id="caseSelect" class="mt-2 w-full glass-input"></select>
+        </div>
+        <!-- Image upload -->
+        <div>
+          <label class="text-sm opacity-80" for="caseImage">Attach Image</label>
+          <input id="caseImage" type="file" accept="image/*" class="mt-2 w-full glass-input" />
+          <div id="imageError" class="text-xs mt-2 text-red-300 hidden">Unsupported image type. Please use PNG, JPG, JPEG, GIF, WEBP, or SVG.</div>
+        </div>
+        <!-- Image preview -->
+        <div class="md:col-span-2">
+          <div class="glass-surface inner-highlight p-3 flex items-center gap-3">
+            <div class="text-sm opacity-80 min-w-[120px]">Image Preview</div>
+            <img id="caseImagePreview" class="modal-image max-h-[200px] hidden" alt="Case image preview" />
+          </div>
+        </div>
+        <!-- Audio upload -->
+        <div>
+          <label class="text-sm opacity-80" for="caseAudio">Attach Sound Effect</label>
+          <input id="caseAudio" type="file" accept="audio/*" class="mt-2 w-full glass-input" />
+          <div id="audioError" class="text-xs mt-2 text-red-300 hidden">Unsupported audio type. Please use MP3, WAV, OGG, M4A, AAC, or FLAC.</div>
+        </div>
+        <!-- Audio preview and actions -->
+        <div>
+          <div class="glass-surface inner-highlight p-3 flex items-center gap-3">
+            <div class="text-sm opacity-80 min-w-[120px]">Sound Preview</div>
+            <div id="audioPreview" class="flex items-center gap-3">
+              <span id="audioFileName" class="text-xs opacity-80"></span>
+              <button id="playAudioBtn" class="action-btn btn-secondary">Play</button>
+              <button id="stopAudioBtn" class="action-btn btn-secondary">Stop</button>
+            </div>
+          </div>
+        </div>
+        <!-- Test popup and clear -->
+        <div class="md:col-span-2 flex gap-3">
+          <button id="openCasePopupBtn" class="action-btn btn-primary">Open Test Popup</button>
+          <button id="clearAttachmentsBtn" class="action-btn btn-danger">Clear Attachments for Selected Case</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -343,6 +402,9 @@
       caseOpeningSequence: [6, 5, 4, 3, 2, 1],
       autoSaveInterval: 60,
     };
+
+    // Mapping of case -> { imageUrl, imageName, audioUrl, audioName }
+    const caseMedia = {};
 
     function updateSummary() {
       const sampleCount = Math.max(10, Math.min(50, gameSettings.numberOfCases));
@@ -453,8 +515,146 @@
         console.log('Export Settings clicked');
       });
 
+      // Case Media Attachments logic
+      const caseSelect = document.getElementById('caseSelect');
+      const imgInput = document.getElementById('caseImage');
+      const audioInput = document.getElementById('caseAudio');
+      const imgPreview = document.getElementById('caseImagePreview');
+      const imgErr = document.getElementById('imageError');
+      const audioErr = document.getElementById('audioError');
+      const audioFileName = document.getElementById('audioFileName');
+      const playAudioBtn = document.getElementById('playAudioBtn');
+      const stopAudioBtn = document.getElementById('stopAudioBtn');
+
+      let previewAudioEl = new Audio();
+      const validImageExt = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
+      const validAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac)$/i;
+
+      function populateCaseSelect() {
+        if (!caseSelect) return;
+        const cur = caseSelect.value;
+        caseSelect.innerHTML = '';
+        for (let i = 1; i <= gameSettings.numberOfCases; i++) {
+          const opt = document.createElement('option');
+          opt.value = String(i);
+          opt.textContent = `Case ${i}`;
+          caseSelect.appendChild(opt);
+        }
+        if (cur && Number(cur) <= gameSettings.numberOfCases) caseSelect.value = cur;
+      }
+
+      function getSelectedCase() { return Number(caseSelect?.value || 1); }
+      function ensureCaseEntry(n) { caseMedia[n] = caseMedia[n] || { imageUrl: '', imageName: '', audioUrl: '', audioName: '' }; }
+      function revokeUrl(url) { if (url) { try { URL.revokeObjectURL(url); } catch(_){} } }
+
+      function refreshPreview() {
+        const n = getSelectedCase(); ensureCaseEntry(n);
+        const media = caseMedia[n];
+        if (media.imageUrl) { imgPreview.src = media.imageUrl; imgPreview.classList.remove('hidden'); }
+        else { imgPreview.removeAttribute('src'); imgPreview.classList.add('hidden'); }
+        if (media.audioName) { audioFileName.textContent = media.audioName; } else { audioFileName.textContent = ''; }
+      }
+
+      caseSelect?.addEventListener('change', refreshPreview);
+
+      imgInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        const n = getSelectedCase(); ensureCaseEntry(n);
+        if (!file) return;
+        const typeOk = file.type.startsWith('image');
+        const extOk = validImageExt.test(file.name);
+        if (!typeOk && !extOk) { imgErr.classList.remove('hidden'); return; } else { imgErr.classList.add('hidden'); }
+        revokeUrl(caseMedia[n].imageUrl);
+        const url = URL.createObjectURL(file);
+        caseMedia[n].imageUrl = url;
+        caseMedia[n].imageName = file.name;
+        refreshPreview();
+      });
+
+      audioInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        const n = getSelectedCase(); ensureCaseEntry(n);
+        if (!file) return;
+        const typeOk = file.type.startsWith('audio');
+        const extOk = validAudioExt.test(file.name);
+        if (!typeOk && !extOk) { audioErr.classList.remove('hidden'); return; } else { audioErr.classList.add('hidden'); }
+        revokeUrl(caseMedia[n].audioUrl);
+        const url = URL.createObjectURL(file);
+        caseMedia[n].audioUrl = url;
+        caseMedia[n].audioName = file.name;
+        audioFileName.textContent = file.name;
+      });
+
+      playAudioBtn?.addEventListener('click', () => {
+        const n = getSelectedCase(); ensureCaseEntry(n);
+        const url = caseMedia[n].audioUrl;
+        if (!url) return;
+        previewAudioEl.pause();
+        previewAudioEl.src = url;
+        previewAudioEl.currentTime = 0;
+        previewAudioEl.play().catch(() => {
+          audioErr.textContent = 'This audio might not be supported by your browser.';
+          audioErr.classList.remove('hidden');
+        });
+      });
+
+      stopAudioBtn?.addEventListener('click', () => {
+        previewAudioEl.pause();
+        previewAudioEl.currentTime = 0;
+      });
+
+      // Modal controls
+      const modal = document.getElementById('caseModal');
+      const modalImg = document.getElementById('modalImage');
+      const modalAudio = document.getElementById('modalAudio');
+      const closeModalBtn = document.getElementById('closeModal');
+      const openCasePopupBtn = document.getElementById('openCasePopupBtn');
+      const clearAttachmentsBtn = document.getElementById('clearAttachmentsBtn');
+
+      function openModalForCase(n) {
+        ensureCaseEntry(n);
+        const media = caseMedia[n];
+        if (media.imageUrl) { modalImg.src = media.imageUrl; modalImg.classList.remove('hidden'); }
+        else { modalImg.removeAttribute('src'); modalImg.classList.add('hidden'); }
+        if (media.audioUrl) { modalAudio.src = media.audioUrl; modalAudio.currentTime = 0; modalAudio.play().catch(() => {}); modalAudio.classList.remove('hidden'); }
+        else { modalAudio.pause(); modalAudio.removeAttribute('src'); modalAudio.classList.add('hidden'); }
+        modal.classList.add('show');
+      }
+
+      function closeModal() { modal.classList.remove('show'); modalAudio.pause(); }
+      openCasePopupBtn?.addEventListener('click', () => openModalForCase(getSelectedCase()));
+      closeModalBtn?.addEventListener('click', closeModal);
+      modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+      clearAttachmentsBtn?.addEventListener('click', () => {
+        const n = getSelectedCase(); ensureCaseEntry(n);
+        revokeUrl(caseMedia[n].imageUrl); revokeUrl(caseMedia[n].audioUrl);
+        caseMedia[n] = { imageUrl: '', imageName: '', audioUrl: '', audioName: '' };
+        refreshPreview();
+      });
+
+      // Initialize select and keep in sync with number of cases
+      populateCaseSelect();
+      document.querySelectorAll('[data-step="numCases"]').forEach(btn => {
+        btn.addEventListener('click', () => setTimeout(populateCaseSelect, 0));
+      });
+
       updateSummary();
     });
   </script>
-</body>
+  
+  <!-- Context Modal -->
+  <div id="caseModal" class="glass-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="text-sm opacity-80">Case Context</div>
+        <button id="closeModal" class="close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImage" class="modal-image hidden" alt="Selected case image" />
+        <audio id="modalAudio" class="modal-audio hidden" controls></audio>
+      </div>
+    </div>
+  </div>
+  </body>
 </html>

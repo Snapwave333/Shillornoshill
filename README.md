@@ -42,7 +42,7 @@ https://github.com/Snapwave333/Shillornoshill/releases
 - Persisted to `localStorage` under `gameSettings.maxPrizeAmount`.
 - The game page (`deal-or-no-deal.html`) uses this value to generate prize cases from $0 up to the max.
 - Zero-amount traps are rendered as `$0`.
-- The game page's "Max Prize" field can temporarily override the setting for the next game.
+- The Game page does not include a "Max Prize" input; configure the amount exclusively in Game Master Settings.
 
 ### How prizes are generated
 - Values are distributed from $0 up to `maxPrizeAmount` using an exponential spread for a satisfying curve.
@@ -58,8 +58,8 @@ https://github.com/Snapwave333/Shillornoshill/releases
 4. Make selections, review offers, and decide: Deal or No Deal.
 
 ### 2) Custom one-off session
-1. On the Game page, set "Max Prize" to a different value for the next game.
-2. Start a new game. Only this session uses the override.
+1. Open the Settings page and set "Max Prize Amount ($)" to your desired value.
+2. Click "Save Settings", then start a new game. The Game page will use the saved value.
 
 ### 3) Designer mode (optional)
 - Want a different distribution curve (e.g., more mid-tier values)?

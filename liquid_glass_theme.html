@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Liquid Glass Theme – Game Master Settings</title>
+
+    <!-- Tailwind CSS (CDN for rapid prototyping) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              accentBlue: '#21CBF3',
+              accentMagenta: '#ff00ff',
+              deepSurface: '#14141E',
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Project font (optional) -->
+    <link rel="stylesheet" href="assets/css/fonts.css" />
+
+    <style>
+      :root {
+        --glass-bg: rgba(20, 20, 30, 0.70);
+        --glass-bg-strong: rgba(20, 20, 30, 0.80);
+        --accent-blue: #21CBF3;
+        --accent-magenta: #ff00ff;
+        --text-primary: #e5e7eb; /* Tailwind gray-200 */
+        --text-dim: #9ca3af;     /* Tailwind gray-400 */
+        --outer-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.35);
+        --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      /* Base app background with subtle texture */
+      body {
+        background: radial-gradient(1200px 600px at 20% 10%, rgba(33, 0, 66, 0.25), transparent),
+                    radial-gradient(900px 600px at 80% 80%, rgba(0, 50, 120, 0.25), transparent),
+                    linear-gradient(180deg, #0c0c12 0%, #0f1117 100%);
+        color: var(--text-primary);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Shared Liquid Glass surface */
+      .glass-surface {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px) saturate(120%);
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: var(--outer-shadow);
+        border-radius: 18px;
+        position: relative;
+        transition: all 180ms ease;
+      }
+
+      .glass-surface::before {
+        /* inner highlight (top edge reflection) */
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: var(--inner-highlight);
+        pointer-events: none;
+      }
+
+      .glass-surface:hover {
+        background: var(--glass-bg-strong);
+        box-shadow: 0 24px 80px rgba(0,0,0,0.50), 0 8px 28px rgba(0,0,0,0.40);
+      }
+
+      /* Subtle micro-motion */
+      @keyframes shadowPulse {
+        0%   { box-shadow: var(--outer-shadow); }
+        50%  { box-shadow: 0 26px 90px rgba(0,0,0,0.55), 0 12px 34px rgba(0,0,0,0.45); }
+        100% { box-shadow: var(--outer-shadow); }
+      }
+
+      .pulse-hover:hover {
+        animation: shadowPulse 900ms ease-out 1;
+      }
+
+      /* Accent glow helpers */
+      .glow-blue {
+        box-shadow: 0 0 0 1px rgba(33, 203, 243, 0.3), 0 10px 30px rgba(33, 203, 243, 0.35);
+      }
+      .glow-magenta {
+        box-shadow: 0 0 0 1px rgba(255, 0, 255, 0.25), 0 10px 30px rgba(255, 0, 255, 0.35);
+      }
+
+      /* Layout */
+      .sidebar {
+        width: 264px;
+        height: 100vh;
+        position: fixed;
+        left: 20px;
+        top: 20px;
+        padding: 18px;
+      }
+
+      .header {
+        height: 56px;
+        position: fixed;
+        left: 304px; /* 264 + 40 margin (20 left + 20 gap) */
+        right: 20px;
+        top: 20px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        /* Draggable area for Electron (visual designation) */
+        -webkit-app-region: drag;
+      }
+
+      .header .no-drag { -webkit-app-region: no-drag; }
+
+      .main-content {
+        position: relative;
+        margin-left: 304px;
+        margin-top: 96px; /* header height + spacing */
+        padding: 20px;
+      }
+
+      /* Window controls */
+      .win-btn {
+        width: 36px; height: 28px;
+        display: grid; place-items: center;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        transition: all 160ms ease;
+      }
+      .win-btn:hover { background: rgba(255,255,255,0.10); }
+
+      .search-input {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        color: var(--text-primary);
+        padding: 8px 12px;
+        width: 280px;
+      }
+
+      /* Cards + buttons */
+      .card {
+        padding: 18px;
+      }
+
+      .card-title {
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        padding-bottom: 20px;
+      }
+
+      .action-btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 200ms ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 150px;
+        color: #0b0f14;
+      }
+
+      .btn-save {
+        background: linear-gradient(135deg, #2bc85f 0%, #57e38b 100%);
+        box-shadow: 0 8px 26px rgba(43, 200, 95, 0.35);
+      }
+      .btn-save:hover { transform: translateY(-1px); }
+
+      .btn-launch {
+        background: linear-gradient(135deg, var(--accent-blue) 0%, #58e6ff 100%);
+        box-shadow: 0 8px 26px rgba(33, 203, 243, 0.35);
+      }
+      .btn-launch:hover { transform: translateY(-1px); }
+
+      .btn-export {
+        background: linear-gradient(135deg, #FF9800 0%, #FFC107 100%);
+        box-shadow: 0 8px 26px rgba(255, 152, 0, 0.35);
+      }
+      .btn-export:hover { transform: translateY(-1px); }
+
+      /* Navigation active state */
+      .nav-item { opacity: 0.85; transition: opacity 160ms ease, transform 160ms ease; }
+      .nav-item:hover { opacity: 1; transform: translateX(2px); }
+      .nav-item.active { opacity: 1; }
+
+      /* Responsive tweaks */
+      @media (max-width: 1024px) {
+        .sidebar { left: 16px; }
+        .header { left: 300px; right: 16px; }
+        .main-content { margin-left: 300px; }
+      }
+      @media (max-width: 860px) {
+        .sidebar { position: fixed; inset: 16px auto auto 16px; width: 240px; }
+        .header { left: calc(16px + 240px + 16px); right: 16px; }
+        .main-content { margin-left: calc(16px + 240px + 16px); }
+      }
+      @media (max-width: 720px) {
+        .sidebar { position: fixed; width: 210px; }
+        .header { left: calc(16px + 210px + 16px); }
+        .main-content { margin-left: calc(16px + 210px + 16px); }
+      }
+      @media (max-width: 640px) {
+        .sidebar { position: static; width: auto; margin: 16px; }
+        .header { position: static; margin: 0 16px; }
+        .main-content { margin: 16px; }
+      }
+    </style>
+</head>
+<body class="font-montserrat">
+  <!-- Sidebar -->
+  <aside class="sidebar glass-surface pulse-hover">
+    <div class="flex items-center gap-3 mb-4">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="url(#g)" stroke-width="2" />
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#21CBF3" />
+            <stop offset="1" stop-color="#ff00ff" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="text-sm text-gray-300">Game Master</span>
+    </div>
+
+    <nav class="space-y-1">
+      <button class="nav-item active flex items-center w-full gap-3 px-3 py-2 rounded-lg text-gray-200 bg-white/5 glow-blue no-drag">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="#21CBF3"/>
+        </svg>
+        <span class="text-sm">Settings</span>
+      </button>
+      <button class="nav-item flex items-center w-full gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/5 no-drag">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+          <path d="M12 2l4 8H8l4-8zm0 20l-4-8h8l-4 8z" fill="#ff00ff"/>
+        </svg>
+        <span class="text-sm">Deliverables</span>
+      </button>
+      <button class="nav-item flex items-center w-full gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/5 no-drag">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+          <path d="M4 6h16v12H4z" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M4 10h16" stroke="#21CBF3" stroke-width="2"/>
+        </svg>
+        <span class="text-sm">Reports</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Header (draggable area) -->
+  <header class="header glass-surface pulse-hover flex items-center">
+    <div class="flex items-center gap-2">
+      <input class="search-input no-drag" type="text" placeholder="Search settings..." />
+    </div>
+    <div class="flex items-center gap-2 no-drag">
+      <button class="win-btn" title="Minimize">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="11" width="14" height="2" fill="#9ca3af"/>
+        </svg>
+      </button>
+      <button class="win-btn" title="Maximize/Restore">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="12" height="12" stroke="#9ca3af" stroke-width="2"/>
+        </svg>
+      </button>
+      <button class="win-btn" title="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 6l12 12M18 6L6 18" stroke="#f87171" stroke-width="2"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <!-- Configuration Preview (glass card) -->
+    <section class="glass-surface card pulse-hover">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title text-xl">Configuration Preview</h2>
+        <span class="text-xs text-gray-400">Live summary</span>
+      </div>
+      <pre id="settingsSummary" class="mt-3 text-sm text-yellow-200/90 overflow-x-auto whitespace-pre-wrap">
+Loading configuration preview...
+      </pre>
+    </section>
+
+    <!-- Quick Actions -->
+    <div class="action-buttons">
+      <button class="action-btn btn-save">Save Configuration</button>
+      <button class="action-btn btn-launch">Launch Game</button>
+      <button class="action-btn btn-export">Export Settings</button>
+    </div>
+
+    <!-- Data Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+      <section class="glass-surface card pulse-hover">
+        <h3 class="card-title text-lg mb-2">Prize Configuration</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <label class="flex flex-col gap-1">
+            <span class="text-gray-300">Max Prize Amount ($)</span>
+            <input id="maxPrizeInput" type="number" min="1" step="1" value="100"
+                   class="no-drag bg-white/5 border border-white/10 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:border-accentBlue" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-gray-300">Number of Cases</span>
+            <div class="flex items-center gap-2">
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="numCases" data-delta="-1">-</button>
+              <span id="numCases" class="min-w-[40px] text-center">25</span>
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="numCases" data-delta="1">+</button>
+            </div>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-gray-300">High-Value Cases</span>
+            <div class="flex items-center gap-2">
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="maxDollarBoxes" data-delta="-1">-</button>
+              <span id="maxDollarBoxes" class="min-w-[40px] text-center">5</span>
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="maxDollarBoxes" data-delta="1">+</button>
+            </div>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-gray-300">Zero-Amount Cases (Traps)</span>
+            <div class="flex items-center gap-2">
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="zeroCases" data-delta="-1">-</button>
+              <span id="zeroCases" class="min-w-[40px] text-center">1</span>
+              <button class="no-drag px-3 py-2 rounded-md bg-white/5 border border-white/10 text-gray-200" data-step="zeroCases" data-delta="1">+</button>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section class="glass-surface card pulse-hover">
+        <h3 class="card-title text-lg mb-2">Game Flow Configuration</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <label class="flex flex-col gap-1 sm:col-span-2">
+            <span class="text-gray-300">Case Opening Sequence</span>
+            <input id="caseSequence" type="text" placeholder="e.g., 6,5,4,3,2,1" value="6,5,4,3,2,1"
+                   class="no-drag bg-white/5 border border-white/10 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:border-accentMagenta" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-gray-300">Auto-Save (seconds)</span>
+            <input id="autoSaveInterval" type="number" min="10" step="10" value="60"
+                   class="no-drag bg-white/5 border border-white/10 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:border-accentBlue" />
+          </label>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // Simulated state for Game Master Settings
+    const gameSettings = {
+      maxPrizeAmount: 100,
+      numberOfCases: 25,
+      maxDollarBoxes: 5,
+      zeroAmountCases: 1,
+      caseOpeningSequence: [6, 5, 4, 3, 2, 1],
+      autoSaveInterval: 60,
+    };
+
+    function updateSummary() {
+      const sampleCount = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+      const max = gameSettings.maxPrizeAmount || 100;
+      const gamma = 3;
+      const scaledValues = Array.from({ length: sampleCount }, (_, i) => {
+        const ratio = i / (sampleCount - 1);
+        const val = max * Math.pow(ratio, gamma);
+        return Math.round(val);
+      });
+
+      const summary = `\n` +
+`Max Prize Amount: $${gameSettings.maxPrizeAmount}\n` +
+`Number of Cases: ${gameSettings.numberOfCases}\n` +
+`High-Value Cases: ${gameSettings.maxDollarBoxes}\n` +
+`Zero-Amount Cases: ${gameSettings.zeroAmountCases}\n` +
+`Case Opening Sequence: ${gameSettings.caseOpeningSequence.join(', ')}\n` +
+`Auto-Save Interval: ${gameSettings.autoSaveInterval}s\n` +
+`\nSample Case Values (curved):\n` +
+scaledValues.map(v => `$${v}`).join(', ');
+
+      document.getElementById('settingsSummary').textContent = summary;
+    }
+
+    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+
+    function handleStepper(setting, delta) {
+      switch (setting) {
+        case 'numCases':
+          gameSettings.numberOfCases = clamp(gameSettings.numberOfCases + delta, 10, 50);
+          document.getElementById('numCases').textContent = gameSettings.numberOfCases;
+          break;
+        case 'maxDollarBoxes':
+          gameSettings.maxDollarBoxes = clamp(gameSettings.maxDollarBoxes + delta, 1, 10);
+          document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
+          break;
+        case 'zeroCases':
+          gameSettings.zeroAmountCases = clamp(gameSettings.zeroAmountCases + delta, 0, 5);
+          document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;
+          break;
+      }
+      updateSummary();
+    }
+
+    // Attach event listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      // Inputs
+      const maxPrizeInput = document.getElementById('maxPrizeInput');
+      maxPrizeInput.addEventListener('input', () => {
+        const val = parseFloat(maxPrizeInput.value);
+        gameSettings.maxPrizeAmount = (isFinite(val) && val > 0) ? val : 100;
+        updateSummary();
+      });
+
+      const autoSaveInput = document.getElementById('autoSaveInterval');
+      autoSaveInput.addEventListener('input', () => {
+        const val = parseInt(autoSaveInput.value, 10);
+        gameSettings.autoSaveInterval = (isFinite(val) && val > 0) ? val : 60;
+        updateSummary();
+      });
+
+      const caseSeqInput = document.getElementById('caseSequence');
+      caseSeqInput.addEventListener('input', () => {
+        const sequence = caseSeqInput.value
+          .split(',')
+          .map(s => parseInt(s.trim(), 10))
+          .filter(n => !isNaN(n) && n > 0);
+        gameSettings.caseOpeningSequence = sequence.length > 0 ? sequence : [6, 5, 4, 3, 2, 1];
+        updateSummary();
+      });
+
+      // Stepper buttons
+      document.querySelectorAll('[data-step]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const setting = btn.getAttribute('data-step');
+          const delta = parseInt(btn.getAttribute('data-delta'), 10);
+          handleStepper(setting, delta);
+        });
+      });
+
+      // Navigation simulation
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+          el.classList.add('active');
+        });
+      });
+
+      // Actions (simulated)
+      document.querySelector('.btn-save')?.addEventListener('click', () => {
+        console.log('Save Configuration clicked');
+      });
+      document.querySelector('.btn-launch')?.addEventListener('click', () => {
+        console.log('Launch Game clicked');
+      });
+      document.querySelector('.btn-export')?.addEventListener('click', () => {
+        console.log('Export Settings clicked');
+      });
+
+      updateSummary();
+    });
+  </script>
+</body>
+</html>

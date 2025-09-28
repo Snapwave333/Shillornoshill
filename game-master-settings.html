@@ -571,6 +571,54 @@
                     <input type="text" class="setting-input" id="caseSequence" value="6, 5, 4, 3, 2, 1" placeholder="e.g., 5, 3, 2, 1, 1">
                 </div>
 
+                <!-- Case Media Attachments -->
+                <div class="setting-group" id="caseMediaAttachments">
+                    <label class="setting-label">Case Media Attachments</label>
+                    <div class="setting-description">
+                        Attach images (including GIFs) and custom sound effects to specific cases. These will display in a popup when that case is opened during gameplay.
+                    </div>
+
+                    <div class="custom-case-config">
+                        <div class="case-selector">
+                            <label>Case Number:</label>
+                            <select class="setting-input" id="caseSelector" onchange="loadCaseConfig()">
+                                <option value="">Select a case...</option>
+                            </select>
+                        </div>
+
+                        <div class="case-customization" id="caseCustomization" style="display: none;">
+                            <div class="file-input-group">
+                                <label>Case Image:</label>
+                                <input type="file" id="caseImage" accept="image/*" onchange="previewCaseImage(this)">
+                                <div class="file-preview" id="imagePreview" style="display: none;">
+                                    <img id="previewImg" src="" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                    <button type="button" onclick="clearCaseImage()">Remove</button>
+                                </div>
+                            </div>
+
+                            <div class="file-input-group">
+                                <label>Sound Effect:</label>
+                                <input type="file" id="caseSound" accept="audio/*" onchange="previewCaseSound(this)">
+                                <div class="file-preview" id="soundPreview" style="display: none;">
+                                    <audio id="previewAudio" controls style="max-width: 200px;"></audio>
+                                    <button type="button" onclick="clearCaseSound()">Remove</button>
+                                </div>
+                            </div>
+
+                            <div class="case-actions">
+                                <button class="action-btn-small" onclick="saveCaseConfig()">Save Case Config</button>
+                                <button class="action-btn-small secondary" onclick="clearCaseConfig()">Clear Config</button>
+                                <button class="action-btn-small" onclick="testCasePopup()">Test Popup</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="configured-cases" id="configuredCases">
+                        <h4>Configured Cases:</h4>
+                        <div id="casesList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
+                    </div>
+                </div>
+
                 <!-- Banker Offer Aggressiveness -->
                 <!-- Banker settings removed -->
 
@@ -598,56 +646,6 @@
                 </select>
             </div>
 
-            <!-- Custom Case Content -->
-            <div class="setting-group">
-                <label class="setting-label">
-                    Custom Case Content
-                </label>
-                <div class="setting-description">
-                    Upload custom images and sound effects for specific cases. These will trigger when the case is opened during gameplay.
-                </div>
-
-                <div class="custom-case-config">
-                    <div class="case-selector">
-                        <label>Case Number:</label>
-                        <select class="setting-input" id="caseSelector" onchange="loadCaseConfig()">
-                            <option value="">Select a case...</option>
-                        </select>
-                    </div>
-
-                    <div class="case-customization" id="caseCustomization" style="display: none;">
-                        <div class="file-input-group">
-                            <label>Case Image:</label>
-                            <input type="file" id="caseImage" accept="image/*" onchange="previewCaseImage(this)">
-                            <div class="file-preview" id="imagePreview" style="display: none;">
-                                <img id="previewImg" src="" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
-                                <button type="button" onclick="clearCaseImage()">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="file-input-group">
-                            <label>Sound Effect:</label>
-                            <input type="file" id="caseSound" accept="audio/*" onchange="previewCaseSound(this)">
-                            <div class="file-preview" id="soundPreview" style="display: none;">
-                                <audio id="previewAudio" controls style="max-width: 200px;"></audio>
-                                <button type="button" onclick="clearCaseSound()">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="case-actions">
-                            <button class="action-btn-small" onclick="saveCaseConfig()">Save Case Config</button>
-                            <button class="action-btn-small secondary" onclick="clearCaseConfig()">Clear Config</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="configured-cases" id="configuredCases">
-                    <h4>Configured Cases:</h4>
-                    <div id="casesList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
-                        <!-- Configured cases will be displayed here -->
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Action Buttons -->
@@ -699,6 +697,8 @@
                 case 'numCases':
                     gameSettings.numberOfCases = Math.max(10, Math.min(50, gameSettings.numberOfCases + delta));
                     document.getElementById('numCases').textContent = gameSettings.numberOfCases;
+                    // Keep the case selector in sync with the number of cases
+                    populateCaseSelector();
                     break;
                 case 'maxDollarBoxes':
                     gameSettings.maxDollarBoxes = Math.max(1, Math.min(10, gameSettings.maxDollarBoxes + delta));
@@ -1106,8 +1106,64 @@
             });
         }
 
+        // ===== CONTEXT MODAL (TEST POPUP) =====
+        function testCasePopup() {
+            if (!currentEditingCase) {
+                alert('Please select a case first.');
+                return;
+            }
+            showCaseContextPopup(currentEditingCase);
+        }
+
+        function showCaseContextPopup(caseNumber) {
+            const conf = gameSettings.customCaseContent[caseNumber];
+            if (!conf || (!conf.image && !conf.sound)) {
+                alert('No attachments configured for this case.');
+                return;
+            }
+
+            const modal = document.getElementById('caseContextModal');
+            const imgEl = document.getElementById('modalCaseImage');
+            const audioEl = document.getElementById('modalCaseAudio');
+
+            if (conf.image) {
+                imgEl.src = conf.image;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.style.display = 'none';
+            }
+
+            if (conf.sound) {
+                audioEl.src = conf.sound;
+                audioEl.style.display = 'block';
+                // Attempt to autoplay; if blocked, controls are available
+                audioEl.play().catch(() => {});
+            } else {
+                audioEl.style.display = 'none';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeCaseContextModal() {
+            const modal = document.getElementById('caseContextModal');
+            const audioEl = document.getElementById('modalCaseAudio');
+            if (audioEl) audioEl.pause();
+            modal.style.display = 'none';
+        }
+
         // Initialize when page loads
         window.onload = initializePage;
     </script>
+    <!-- Context Modal for Case Media Attachments -->
+    <div id="caseContextModal" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: #111; border: 1px solid rgba(0,255,255,0.5); border-radius: 12px; padding: 16px; width: min(640px, 92vw); color: #00ffff; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+            <button onclick="closeCaseContextModal()" style="position: absolute; top: 8px; right: 8px; background: transparent; border: 1px solid rgba(0,255,255,0.5); color: #00ffff; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✖ Close</button>
+            <div id="modalImageContainer" style="text-align: center; margin-bottom: 12px;">
+                <img id="modalCaseImage" alt="Case Attachment" style="max-width: 100%; max-height: 60vh; border-radius: 8px; display: none;" />
+            </div>
+            <audio id="modalCaseAudio" controls style="width: 100%; display: none;"></audio>
+        </div>
+    </div>
 </body>
 </html>

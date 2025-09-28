@@ -538,8 +538,8 @@
                 console.log(`Applied max prize amount from settings: ${customMaxPrize}`);
             }
 
-            // Apply number of cases (if different from default 26)
-            if (gameMasterSettings.numberOfCases && gameMasterSettings.numberOfCases !== 26) {
+            // Apply number of cases (if different from default 25)
+            if (gameMasterSettings.numberOfCases && gameMasterSettings.numberOfCases !== 25) {
                 const numCases = Math.max(10, Math.min(50, gameMasterSettings.numberOfCases));
                 // Recreate cases array with new count
                 gameState.cases = Array.from({length: numCases}, (_, i) => ({
@@ -578,10 +578,10 @@
             loadGameMasterSettings();
             console.log('Loaded gameMasterSettings:', gameMasterSettings);
 
-            // Determine number of cases (default 26, bounded between 10 and 50)
+            // Determine number of cases (default 25, bounded between 10 and 50)
             const numCases = gameMasterSettings?.numberOfCases
                 ? Math.max(10, Math.min(50, gameMasterSettings.numberOfCases))
-                : 26;
+                : 25;
             console.log('Initializing with numCases:', numCases);
 
             // Apply settings that affect prize generation
@@ -609,6 +609,10 @@
 
             // Ensure values count matches number of cases
             values = values.slice(0, numCases);
+            // Ensure values array matches the desired number of cases
+            if (values.length > numCases) {
+                values = values.slice(0, numCases);
+            }
             if (values.length < numCases) {
                 const padValue = values.length > 0 ? values[values.length - 1] : 0.01;
                 while (values.length < numCases) values.push(padValue);

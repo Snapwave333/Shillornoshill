@@ -441,9 +441,13 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
+            /* Keep action buttons horizontal on small screens, allow wrapping */
             .action-buttons {
-                flex-direction: column;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
                 align-items: center;
+                gap: 12px;
             }
         }
 

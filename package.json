@@ -1,0 +1,53 @@
+{
+  "name": "shill-or-no-shill-app",
+  "version": "1.0.0",
+  "description": "Shill Or No Shill packaged as a Windows desktop app",
+  "main": "electron/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "postinstall": "echo Postinstall completed"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.9.5"
+  },
+  "build": {
+    "appId": "com.shill.or.no.shill",
+    "productName": "Shill Or No Shill",
+    "files": [
+      "**/*",
+      "!backups/**",
+      "!scripts/**",
+      "!**/*.ps1",
+      "!**/*.zip"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "fileAssociations": [
+      {
+        "ext": "shill",
+        "name": "Shill Or No Shill File",
+        "description": "Open with Shill Or No Shill",
+        "role": "Editor"
+      }
+    ]
+  }
+}

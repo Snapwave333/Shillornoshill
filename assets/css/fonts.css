@@ -1,0 +1,25 @@
+/* Montserrat font integration */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/montserrat/Montserrat-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../fonts/montserrat/Montserrat-Bold.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* Apply Montserrat across UI */
+:root {
+  --ui-font: 'Montserrat', Arial, sans-serif;
+}
+
+body, button, input, select, textarea {
+  font-family: var(--ui-font);
+}

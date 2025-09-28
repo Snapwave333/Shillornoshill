@@ -539,20 +539,66 @@
             // Load Game Master Settings first
             loadGameMasterSettings();
 
-            // Create cases (default 26 or from settings)
-            const numCases = gameMasterSettings?.numberOfCases || 26;
-            gameState.cases = Array.from({length: numCases}, (_, i) => ({
+            // Determine number of cases (default 26, bounded between 10 and 50)
+            const numCases = gameMasterSettings?.numberOfCases
+                ? Math.max(10, Math.min(50, gameMasterSettings.numberOfCases))
+                : 26;
+
+            // Start from standard values
+            let values = [...BASE_STANDARD_VALUES];
+
+            // Apply prize scale multiplier
+            if (gameMasterSettings?.prizeScaleMultiplier && gameMasterSettings.prizeScaleMultiplier > 0) {
+                const scaleFactor = gameMasterSettings.prizeScaleMultiplier;
+                values = values.map(v => Math.round(v * scaleFactor * 100) / 100);
+            }
+
+            // Apply zero-amount cases (force lowest values to $0.01)
+            if (gameMasterSettings?.zeroAmountCases !== undefined) {
+                const zeroCount = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
+                const sorted = [...values].sort((a, b) => a - b);
+                for (let i = 0; i < zeroCount && i < sorted.length; i++) {
+                    sorted[i] = 0.01;
+                }
+                values = sorted;
+            }
+
+            // Ensure values count matches number of cases
+            values = values.slice(0, numCases);
+            if (values.length < numCases) {
+                const padValue = values.length > 0 ? values[values.length - 1] : 0.01;
+                while (values.length < numCases) values.push(padValue);
+            }
+
+            // Shuffle values for random case assignment
+            values = values.sort(() => Math.random() - 0.5);
+
+            // Assign values to cases upfront
+            gameState.cases = Array.from({ length: numCases }, (_, i) => ({
                 number: i + 1,
                 opened: false,
-                value: null
+                value: values[i]
             }));
 
-            // Apply settings to modify game values and structure
-            applyGameMasterSettings();
+            gameState.values = [...values];
+            gameState.remainingValues = [...values];
 
-            // Shuffle and assign values
-            gameState.values = [...gameState.values].sort(() => Math.random() - 0.5);
-            gameState.remainingValues = [...gameState.values];
+            // Case opening sequence (custom)
+            if (gameMasterSettings?.caseOpeningSequence && gameMasterSettings.caseOpeningSequence.length > 0) {
+                gameState.customOpeningSequence = [...gameMasterSettings.caseOpeningSequence];
+            }
+
+            // Reset round info
+            gameState.currentRound = 1;
+            gameState.casesOpened = 0;
+            // If a custom opening sequence is provided, use (and sanitize) its first value; otherwise default to 6
+            const initialDesired = (gameState.customOpeningSequence && gameState.customOpeningSequence.length > 0)
+                ? sanitizeCasesToOpen(gameState.customOpeningSequence[0])
+                : 6;
+            // Don't allow opening more cases than exist (excluding the player's case)
+            gameState.casesToOpen = Math.min(initialDesired, getUnopenedSelectableCasesCount());
+            gameState.offerMadeThisRound = false;
+            gameState.gameActive = false;
 
             // Update UI
             updateValuesGrid();
@@ -631,7 +677,11 @@
             }
 
             // Opening cases during game - only allow if still need to open cases in current round
-            if (gameState.casesOpened < gameState.casesToOpen) {
+            const allowedThisRound = Math.min(
+                sanitizeCasesToOpen(gameState.casesToOpen || 1),
+                getUnopenedSelectableCasesCount()
+            );
+            if (gameState.casesOpened < allowedThisRound) {
                 const caseData = gameState.cases.find(c => c.number === caseNumber);
                 if (caseData && !caseData.opened && caseData.number !== gameState.playerCase) {
                     openCase(caseNumber);
@@ -641,7 +691,7 @@
                     document.getElementById('gameStatus').textContent = "This case is already opened!";
                 }
             } else {
-                document.getElementById('gameStatus').textContent = 'Round complete - Enter offer above and click SET OFFER';
+                document.getElementById('gameStatus').textContent = 'Round complete or no cases available to open - Enter offer above and click SET OFFER';
             }
         }
 
@@ -649,11 +699,6 @@
         function openCase(caseNumber) {
             const caseIndex = gameState.cases.findIndex(c => c.number === caseNumber);
             if (caseIndex === -1) return;
-
-            // Assign value to case (in a real game, this would be predetermined)
-            if (!gameState.cases[caseIndex].value) {
-                gameState.cases[caseIndex].value = gameState.values[gameState.values.length - gameState.remainingValues.length];
-            }
 
             gameState.cases[caseIndex].opened = true;
             const openedValue = gameState.cases[caseIndex].value;
@@ -704,6 +749,18 @@
             if (remaining > 0) {
                 document.getElementById('gameStatus').textContent = `${remaining} more cases to open for offer`;
             }
+        }
+
+        // Helper: sanitize cases-to-open value to ensure it's a positive integer
+        function sanitizeCasesToOpen(value) {
+            const n = Number(value);
+            if (!Number.isFinite(n) || n <= 0) return 1;
+            return Math.max(1, Math.floor(n));
+        }
+
+        // Helper: how many cases can be opened (excluding player's case and already opened cases)
+        function getUnopenedSelectableCasesCount() {
+            return gameState.cases.filter(c => !c.opened && c.number !== gameState.playerCase).length;
         }
 
         // Calculate suggested offer
@@ -821,6 +878,11 @@
                 console.log(`Using default sequence - Round ${gameState.currentRound}: ${gameState.casesToOpen} cases to open`);
             }
 
+            // Cap casesToOpen by remaining selectable cases (and sanitize)
+            gameState.casesToOpen = Math.min(
+                sanitizeCasesToOpen(gameState.casesToOpen || 1),
+                getUnopenedSelectableCasesCount()
+            );
             gameState.casesOpened = 0;
             document.getElementById('gameStatus').textContent = `Round ${gameState.currentRound}: Open ${gameState.casesToOpen} cases`;
         }
@@ -831,11 +893,13 @@
 
             if (reason === 'ACCEPTED') {
                 const lastOffer = gameState.offerHistory[gameState.offerHistory.length - 1];
-                document.getElementById('gameStatus').textContent = `SHILL! Player accepted ${formatCurrency(lastOffer.offer)}`;
+                const offerAmt = lastOffer && typeof lastOffer.offer === 'number' ? lastOffer.offer : 0;
+                document.getElementById('gameStatus').textContent = `SHILL! Player accepted ${formatCurrency(offerAmt)}`;
             } else {
                 // Reveal player's case
                 const playerCaseData = gameState.cases.find(c => c.number === gameState.playerCase);
-                document.getElementById('gameStatus').textContent = `NO SHILL! Player's case: ${formatCurrency(playerCaseData.value)}`;
+                const caseAmt = playerCaseData?.value ?? 0;
+                document.getElementById('gameStatus').textContent = `NO SHILL! Player's case: ${formatCurrency(caseAmt)}`;
             }
         }
 
@@ -870,12 +934,15 @@
             console.log('History display updated with', gameState.offerHistory.length, 'offers');
         }
 
-        // Format currency
+        // Format currency (robust against null/undefined)
         function formatCurrency(amount) {
+            if (typeof amount !== 'number' || !isFinite(amount)) {
+                return '$0';
+            }
             if (amount < 1) {
                 return `$${amount.toFixed(2)}`;
             }
-            return `$${amount.toLocaleString()}`;
+            return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
         }
 
         // Start new game

@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, Notification } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 let mainWindow;
@@ -55,6 +56,23 @@ function setupMenu() {
               body: 'Packaged desktop app running on Electron.',
             });
             n.show();
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates',
+          click: () => {
+            if (!app.isPackaged) {
+              const n = new Notification({ title: 'Updater', body: 'Auto-update is available only in packaged builds.' });
+              n.show();
+              return;
+            }
+            try {
+              autoUpdater.checkForUpdates();
+            } catch (e) {
+              const n = new Notification({ title: 'Updater Error', body: String(e) });
+              n.show();
+            }
           },
         },
       ],
@@ -124,6 +142,55 @@ function handleArgOpen() {
   }
 }
 
+function setupAutoUpdater() {
+  // Only run auto-updater in packaged apps; dev runs do not have update config
+  if (!app.isPackaged) return;
+  // Download updates automatically and notify
+  autoUpdater.autoDownload = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    const n = new Notification({ title: 'Updater', body: 'Checking for updates...' });
+    n.show();
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    const n = new Notification({ title: 'Updater', body: `Update available: v${info.version}. Downloading...` });
+    n.show();
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    const n = new Notification({ title: 'Updater', body: 'You are on the latest version.' });
+    n.show();
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow) {
+      const percent = progress.percent ? progress.percent / 100 : undefined;
+      mainWindow.setProgressBar(typeof percent === 'number' ? percent : 0);
+    }
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    const n = new Notification({ title: 'Updater', body: 'Update downloaded. The app will restart to install.' });
+    n.show();
+    // Quit and install (will restart the app)
+    autoUpdater.quitAndInstall();
+  });
+
+  autoUpdater.on('error', (err) => {
+    const n = new Notification({ title: 'Updater Error', body: String(err || 'Unknown error') });
+    n.show();
+  });
+
+  // Initial check on startup
+  try {
+    autoUpdater.checkForUpdatesAndNotify();
+  } catch (e) {
+    const n = new Notification({ title: 'Updater Error', body: String(e) });
+    n.show();
+  }
+}
+
 // Single instance lock to route protocol/args
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -154,6 +221,7 @@ app.whenReady().then(() => {
   const n = new Notification({ title: 'Shill Or No Shill', body: 'App is ready!' });
   n.show();
   handleArgOpen();
+  setupAutoUpdater();
 });
 
 app.on('window-all-closed', () => {

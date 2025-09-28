@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg2)"/>
+  <text x="40" y="60" fill="#93c5fd" font-size="36" font-family="Segoe UI, Roboto, Arial" font-weight="600">Shill Or No Shill</text>
+  <text x="40" y="100" fill="#a3e635" font-size="20" font-family="Segoe UI, Roboto, Arial">Prizes: $0 … $100,000</text>
+
+  <!-- Case grid -->
+  <g transform="translate(40,130)">
+    <rect x="0" y="0" width="880" height="320" rx="12" fill="#0b1220" stroke="#334155"/>
+    <!-- Draw 20 simple cases -->
+    <g font-family="Consolas, Menlo, monospace" font-size="14" fill="#cbd5e1">
+      <!-- 5 columns x 4 rows -->
+      <g>
+        <!-- Row 1 -->
+        <rect x="20" y="20" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="95" y="55" text-anchor="middle">$0</text>
+        <rect x="190" y="20" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="265" y="55" text-anchor="middle">$250</text>
+        <rect x="360" y="20" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="435" y="55" text-anchor="middle">$1,250</text>
+        <rect x="530" y="20" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="605" y="55" text-anchor="middle">$10,000</text>
+        <rect x="700" y="20" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="775" y="55" text-anchor="middle">$100,000</text>
+        <!-- Row 2 -->
+        <rect x="20" y="90" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="95" y="125" text-anchor="middle">$500</text>
+        <rect x="190" y="90" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="265" y="125" text-anchor="middle">$750</text>
+        <rect x="360" y="90" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="435" y="125" text-anchor="middle">$5,000</text>
+        <rect x="530" y="90" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="605" y="125" text-anchor="middle">$20,000</text>
+        <rect x="700" y="90" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="775" y="125" text-anchor="middle">$75,000</text>
+        <!-- Row 3 -->
+        <rect x="20" y="160" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="95" y="195" text-anchor="middle">$1,000</text>
+        <rect x="190" y="160" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="265" y="195" text-anchor="middle">$2,500</text>
+        <rect x="360" y="160" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="435" y="195" text-anchor="middle">$8,000</text>
+        <rect x="530" y="160" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="605" y="195" text-anchor="middle">$30,000</text>
+        <rect x="700" y="160" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="775" y="195" text-anchor="middle">$95,000</text>
+        <!-- Row 4 -->
+        <rect x="20" y="230" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="95" y="265" text-anchor="middle">$0</text>
+        <rect x="190" y="230" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="265" y="265" text-anchor="middle">$3,000</text>
+        <rect x="360" y="230" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="435" y="265" text-anchor="middle">$12,000</text>
+        <rect x="530" y="230" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="605" y="265" text-anchor="middle">$40,000</text>
+        <rect x="700" y="230" width="150" height="60" rx="8" fill="#111827" stroke="#374151"/>
+        <text x="775" y="265" text-anchor="middle">$100,000</text>
+      </g>
+    </g>
+  </g>
+
+  <text x="40" y="500" fill="#64748b" font-size="14" font-family="Segoe UI, Roboto, Arial">AI concept art • Not a screenshot</text>
+</svg>

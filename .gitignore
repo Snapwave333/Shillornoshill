@@ -13,3 +13,15 @@ Thumbs.db
 
 # Env
 .env
+
+# Archives and large binaries (use GitHub Releases instead)
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# Local backups/snapshots (not needed in Git history)
+backups/**
+
+# Vendored CLI binaries (avoid large file warnings)
+tools/gh/bin/**

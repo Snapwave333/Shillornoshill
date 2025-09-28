@@ -77,6 +77,7 @@ https://github.com/Snapwave333/Shillornoshill/releases
 ├── build/                        # App icons and assets
 ├── scripts/                      # Utilities (icon generation, backups)
 ├── assets/                       # Branding & extracted images
+│   └── extracted/images/         # Concept art and visuals for README
 ├── backups/                      # Snapshots/originals (excluded from build)
 ├── package.json                  # Scripts & electron-builder config
 └── README.md                     # This doc
@@ -100,6 +101,17 @@ https://github.com/Snapwave333/Shillornoshill/releases
   - Gameplay storyboard images
   - Case/prize concept art
   - Themed backgrounds
+
+### Screenshots & Concept Art
+Below are AI-styled concept visuals that illustrate the app screens:
+
+Settings (concept):
+
+![Settings Concept](assets/extracted/images/concept-settings.svg)
+
+Game (concept):
+
+![Game Concept](assets/extracted/images/concept-game.svg)
 
 ## Troubleshooting
 - Blank page in Electron: run `npm install`, then `npm run start`.

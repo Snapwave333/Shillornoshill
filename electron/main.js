@@ -1,15 +1,19 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, Notification } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let tray;
 
 function createWindow() {
+  const icoPath = path.join(__dirname, '..', 'build', 'icon.ico');
+  const fallbackIcon = path.join(__dirname, '..', 'hill-or-no-shill-logo.png');
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    icon: path.join(__dirname, '..', 'hill-or-no-shill-logo.png'),
+    fullscreen: true,
+    icon: fs.existsSync(icoPath) ? icoPath : fallbackIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -84,8 +88,9 @@ function setupMenu() {
 
 function setupTray() {
   try {
-    const iconPath = path.join(__dirname, '..', 'hill-or-no-shill-logo.png');
-    const image = nativeImage.createFromPath(iconPath);
+    const pngIconPath = path.join(__dirname, '..', 'build', 'icon.png');
+    const fallbackIconPath = path.join(__dirname, '..', 'hill-or-no-shill-logo.png');
+    const image = nativeImage.createFromPath(fs.existsSync(pngIconPath) ? pngIconPath : fallbackIconPath);
     tray = new Tray(image);
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Open Game', click: () => mainWindow?.loadFile(path.join(__dirname, '..', 'deal-or-no-deal.html')) },

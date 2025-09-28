@@ -246,6 +246,33 @@
             margin-bottom: 20px;
         }
 
+        .max-prize-section {
+            margin-bottom: 20px;
+        }
+
+        .max-prize-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            background: rgba(255, 215, 0, 0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .set-max-prize-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #9C27B0, #E91E63);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
         .offer-input {
             width: 100%;
             padding: 10px;
@@ -281,7 +308,7 @@
             text-align: center;
             font-size: 14px;
             color: #2196F3;
-            display: none; /* Hidden since only manual offers are used */
+            margin-top: 10px;
         }
 
         .last-value {
@@ -425,10 +452,15 @@
         <div class="controller-panel">
             <div class="controller-title">HOST CONTROLLER</div>
 
+            <div class="max-prize-section">
+                <input type="number" class="max-prize-input" id="maxPrizeAmount" placeholder="Enter Max Prize Amount ($)" min="1" step="100">
+                <button class="set-max-prize-btn" onclick="setMaxPrize()">SET MAX PRIZE</button>
+            </div>
+
             <div class="offer-section">
                 <input type="number" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($)" min="0" step="100">
                 <button class="set-offer-btn" onclick="setManualOffer()">SET OFFER</button>
-                <div class="suggested-offer" id="suggestedOffer">Suggested: Calculating...</div>
+                <!-- Manual Banker offers only - no suggestions needed -->
             </div>
 
             <div class="last-value">
@@ -456,8 +488,13 @@
             casesOpened: 0,
             gameActive: false,
             offerHistory: [],
-            offerMadeThisRound: false
+            offerMadeThisRound: false,
+            finalRound: false, // Track final round state
+            originalPlayerCase: null // Store original case for swap logic
         };
+
+        // Custom max prize amount (can be set by game master)
+        let customMaxPrize = null;
 
         // Standard Deal or No Deal values (base values before scaling)
         const BASE_STANDARD_VALUES = [
@@ -493,11 +530,10 @@
         function applyGameMasterSettings() {
             if (!gameMasterSettings) return;
 
-            // Apply prize scale multiplier
-            if (gameMasterSettings.prizeScaleMultiplier && gameMasterSettings.prizeScaleMultiplier > 0) {
-                const scaleFactor = gameMasterSettings.prizeScaleMultiplier;
-                gameState.values = BASE_STANDARD_VALUES.map(value => Math.round(value * scaleFactor * 100) / 100);
-                console.log(`Applied prize scale multiplier: ${scaleFactor}x`);
+            // Apply max prize amount (preferred over legacy prizeScaleMultiplier)
+            if (gameMasterSettings.maxPrizeAmount && gameMasterSettings.maxPrizeAmount > 0) {
+                customMaxPrize = gameMasterSettings.maxPrizeAmount;
+                console.log(`Applied max prize amount from settings: ${customMaxPrize}`);
             }
 
             // Apply number of cases (if different from default 26)
@@ -522,11 +558,11 @@
             // Apply zero-amount cases (traps)
             if (gameMasterSettings.zeroAmountCases !== undefined) {
                 gameState.zeroAmountCases = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
-                // Force the lowest values to be trap amounts (fixed at $0.01) regardless of scale
+                // Force the lowest values to be trap amounts (set to $0) regardless of scale
                 if (Array.isArray(gameState.values) && gameState.values.length > 0) {
                     const sorted = [...gameState.values].sort((a, b) => a - b);
                     for (let i = 0; i < gameState.zeroAmountCases && i < sorted.length; i++) {
-                        sorted[i] = 0.01;
+                        sorted[i] = 0;
                     }
                     gameState.values = sorted;
                 }
@@ -538,27 +574,33 @@
         function initializeGame() {
             // Load Game Master Settings first
             loadGameMasterSettings();
+            console.log('Loaded gameMasterSettings:', gameMasterSettings);
 
             // Determine number of cases (default 26, bounded between 10 and 50)
             const numCases = gameMasterSettings?.numberOfCases
                 ? Math.max(10, Math.min(50, gameMasterSettings.numberOfCases))
                 : 26;
+            console.log('Initializing with numCases:', numCases);
 
-            // Start from standard values
-            let values = [...BASE_STANDARD_VALUES];
+            // Apply settings that affect prize generation
+            applyGameMasterSettings();
 
-            // Apply prize scale multiplier
-            if (gameMasterSettings?.prizeScaleMultiplier && gameMasterSettings.prizeScaleMultiplier > 0) {
-                const scaleFactor = gameMasterSettings.prizeScaleMultiplier;
-                values = values.map(v => Math.round(v * scaleFactor * 100) / 100);
+            // Use custom max prize values if set, otherwise start from standard values
+            let values;
+            if (customMaxPrize && customMaxPrize > 0) {
+                values = generateCustomPrizeValues(numCases);
+            } else {
+                values = [...BASE_STANDARD_VALUES];
             }
 
-            // Apply zero-amount cases (force lowest values to $0.01)
+            // Legacy: prizeScaleMultiplier support removed in favor of max prize input
+
+            // Apply zero-amount cases (force lowest values to $0)
             if (gameMasterSettings?.zeroAmountCases !== undefined) {
                 const zeroCount = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
                 const sorted = [...values].sort((a, b) => a - b);
                 for (let i = 0; i < zeroCount && i < sorted.length; i++) {
-                    sorted[i] = 0.01;
+                    sorted[i] = 0;
                 }
                 values = sorted;
             }
@@ -603,7 +645,6 @@
             // Update UI
             updateValuesGrid();
             updateCasesGrid();
-            updateSuggestedOffer();
         }
 
         // Update the values grid
@@ -671,8 +712,7 @@
             const gameStatus = document.getElementById('gameStatus');
             const decisionButtons = gameStatus.querySelector('.decision-buttons');
             if (decisionButtons) {
-                // Player needs to make a decision first
-                document.getElementById('gameStatus').textContent = 'Please make a decision on the offer first!';
+                // Player needs to make a decision first - do nothing
                 return;
             }
 
@@ -717,6 +757,13 @@
 
             gameState.casesOpened++;
 
+            // Check if we have entered final round (only 2 cases remaining: player + 1 other)
+            if (getUnopenedSelectableCasesCount() === 1) {
+                gameState.finalRound = true;
+                gameState.originalPlayerCase = gameState.playerCase;
+                console.log('Entered final round - 2 cases remaining');
+            }
+
             // Check if round is complete
             if (gameState.casesOpened >= gameState.casesToOpen) {
                 // Round complete - only show status, host will manually set offer
@@ -727,7 +774,6 @@
 
             updateCasesGrid();
             updateValuesGrid();
-            updateSuggestedOffer();
         }
 
         // Highlight opened value temporarily
@@ -763,22 +809,11 @@
             return gameState.cases.filter(c => !c.opened && c.number !== gameState.playerCase).length;
         }
 
-        // Calculate suggested offer
-        function calculateSuggestedOffer() {
-            if (gameState.remainingValues.length === 0) return 0;
-
-            const sum = gameState.remainingValues.reduce((a, b) => a + b, 0);
-            return Math.round(sum / gameState.remainingValues.length);
-        }
-
-        // Update suggested offer display
-        function updateSuggestedOffer() {
-            const suggested = calculateSuggestedOffer();
-            document.getElementById('suggestedOffer').textContent = `Suggested: ${formatCurrency(suggested)}`;
-        }
+        // Real-life Banker calculations - no automated suggestions needed
 
         // Make an offer (only manual offers allowed)
         function makeOffer() {
+            console.log('makeOffer() called');
             const manualOfferInput = document.getElementById('manualOffer');
             const manualOffer = parseFloat(manualOfferInput.value);
 
@@ -793,8 +828,10 @@
 
             // Prevent duplicate offers in same round
             if (gameState.offerMadeThisRound) {
+                console.log('Offer already made this round, exiting');
                 return;
             }
+            console.log('Setting offer for this round');
             gameState.offerMadeThisRound = true;
 
             // Show offer to player (in real implementation, this would be on a separate display)
@@ -816,6 +853,7 @@
             updateHistory();
 
             // Show decision buttons
+            console.log('Calling showDecisionButtons()');
             showDecisionButtons();
         }
 
@@ -837,26 +875,38 @@
             }
 
             if (accepted) {
+                // Player accepted - end game immediately
                 endGame('ACCEPTED');
             } else {
-                // Player declined - continue to next round
-                nextRound();
+                // Player rejected the offer
+                if (gameState.finalRound) {
+                    // Final round - show KEEP/SWAP decision
+                    showKeepSwapButtons();
+                } else {
+                    // Continue to next round
+                    nextRound();
+                }
             }
 
             updateHistory();
 
-            // Remove decision buttons after decision is made
-            const gameStatus = document.getElementById('gameStatus');
-            const existingContainer = gameStatus.querySelector('.decision-buttons');
-            if (existingContainer) {
-                existingContainer.remove();
+            // Remove existing decision buttons (only if not showing KEEP/SWAP)
+            if (!accepted || !gameState.finalRound) {
+                const gameStatus = document.getElementById('gameStatus');
+                const existingContainer = gameStatus.querySelector('.decision-buttons');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
             }
         }
 
         // Move to next round
         function nextRound() {
+            console.log(`nextRound() called - current round: ${gameState.currentRound}`);
+            console.log('Remaining selectable cases:', getUnopenedSelectableCasesCount());
             gameState.currentRound++;
             gameState.offerMadeThisRound = false; // Reset offer flag for new round
+            console.log(`Moved to round ${gameState.currentRound}`);
 
             // Use custom case opening sequence if available, otherwise use default
             if (gameState.customOpeningSequence && gameState.customOpeningSequence.length >= gameState.currentRound) {
@@ -873,18 +923,37 @@
                     case 7: gameState.casesToOpen = 1; break;
                     case 8: gameState.casesToOpen = 1; break;
                     case 9: gameState.casesToOpen = 1; break;
+                    case 10: gameState.casesToOpen = 1; break;
+                    case 11: gameState.casesToOpen = 1; break;
+                    case 12: gameState.casesToOpen = 1; break;
+                    case 13: gameState.casesToOpen = 1; break;
+                    case 14: gameState.casesToOpen = 1; break;
+                    case 15: gameState.casesToOpen = 1; break;
+                    case 16: gameState.casesToOpen = 1; break;
+                    case 17: gameState.casesToOpen = 1; break;
+                    case 18: gameState.casesToOpen = 1; break;
+                    case 19: gameState.casesToOpen = 1; break;
+                    case 20: gameState.casesToOpen = 1; break;
                     default: gameState.casesToOpen = 1;
                 }
-                console.log(`Using default sequence - Round ${gameState.currentRound}: ${gameState.casesToOpen} cases to open`);
+                console.log(`Using default sequence - Round ${gameState.currentRound}: raw ${gameState.casesToOpen} cases to open`);
             }
 
             // Cap casesToOpen by remaining selectable cases (and sanitize)
-            gameState.casesToOpen = Math.min(
+            const selectable = getUnopenedSelectableCasesCount();
+            console.log(`Selectable cases count: ${selectable}`);
+            const rawCasesToOpen = gameState.casesToOpen;
+            gameState.casesToOpen = Math.max(1, Math.min(
                 sanitizeCasesToOpen(gameState.casesToOpen || 1),
-                getUnopenedSelectableCasesCount()
-            );
+                selectable
+            ));
+            console.log(`Capped casesToOpen from ${rawCasesToOpen} to ${gameState.casesToOpen}`);
+            if (gameState.casesToOpen > selectable) {
+                console.warn(`Wanted to set casesToOpen to ${rawCasesToOpen} but capped to ${gameState.casesToOpen} due to selectable limit`);
+            }
             gameState.casesOpened = 0;
             document.getElementById('gameStatus').textContent = `Round ${gameState.currentRound}: Open ${gameState.casesToOpen} cases`;
+            console.log(`Set status to: Round ${gameState.currentRound}: Open ${gameState.casesToOpen} cases`);
         }
 
         // End the game
@@ -945,6 +1014,41 @@
             return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
         }
 
+        // Set maximum prize amount
+        function setMaxPrize() {
+            const maxPrizeInput = document.getElementById('maxPrizeAmount');
+            const maxPrize = parseFloat(maxPrizeInput.value);
+
+            if (maxPrize && maxPrize > 0) {
+                customMaxPrize = maxPrize;
+                maxPrizeInput.value = '';
+                document.getElementById('gameStatus').textContent = `Maximum prize set to ${formatCurrency(maxPrize)}. Start a new game to use it!`;
+                console.log(`Custom max prize set to: ${customMaxPrize}`);
+            }
+        }
+
+        // Generate custom prize values from $0 to customMaxPrize
+        function generateCustomPrizeValues(numCases) {
+            if (!customMaxPrize || customMaxPrize <= 0) {
+                return [...BASE_STANDARD_VALUES]; // Fallback to standard values
+            }
+
+            // Generate values from $0 to customMaxPrize using an exponential curve for spacing
+            const values = [];
+            const maxVal = customMaxPrize;
+            const gamma = 3; // curvature (higher -> more small values)
+
+            for (let i = 0; i < numCases; i++) {
+                const ratio = i / (numCases - 1);
+                const scaledVal = maxVal * Math.pow(ratio, gamma);
+                const roundedVal = Math.max(0, Math.round(scaledVal * 100) / 100);
+                values.push(roundedVal);
+            }
+
+            console.log(`Generated custom prizes from $0 to ${formatCurrency(maxVal)}:`, values);
+            return values;
+        }
+
         // Start new game
         function startNewGame() {
             gameState = {
@@ -957,7 +1061,9 @@
                 casesOpened: 0,
                 gameActive: false,
                 offerHistory: [],
-                offerMadeThisRound: false
+                offerMadeThisRound: false,
+                finalRound: false,
+                originalPlayerCase: null
             };
 
             document.getElementById('lastValue').textContent = 'Last Opened: None';
@@ -967,8 +1073,185 @@
             initializeGame();
         }
 
+        // Show KEEP/SWAP buttons for final round decision
+        function showKeepSwapButtons() {
+            // Create modal overlay
+            const modalOverlay = document.createElement('div');
+            modalOverlay.id = 'finalModal';
+            modalOverlay.style.position = 'fixed';
+            modalOverlay.style.top = '0';
+            modalOverlay.style.left = '0';
+            modalOverlay.style.width = '100%';
+            modalOverlay.style.height = '100%';
+            modalOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
+            modalOverlay.style.zIndex = '1000';
+            modalOverlay.style.display = 'flex';
+            modalOverlay.style.justifyContent = 'center';
+            modalOverlay.style.alignItems = 'center';
+
+            const modalContent = document.createElement('div');
+            modalContent.style.background = '#1e3c72';
+            modalContent.style.color = 'white';
+            modalContent.style.padding = '30px';
+            modalContent.style.borderRadius = '15px';
+            modalContent.style.border = '3px solid #ffd700';
+            modalContent.style.maxWidth = '500px';
+            modalContent.style.textAlign = 'center';
+            modalContent.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+
+            const otherCase = gameState.cases.find(c => !c.opened && c.number !== gameState.playerCase)?.number || 'Unknown';
+            modalContent.innerHTML = `
+                <div style="font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 20px;">FINAL ROUND DECISION</div>
+                <div style="font-size: 16px; margin-bottom: 10px;">You have your case: <strong>${gameState.originalPlayerCase}</strong></div>
+                <div style="font-size: 16px; margin-bottom: 30px;">The last remaining case is: <strong>${otherCase}</strong></div>
+                <div style="font-size: 18px; color: #FFD700; margin-bottom: 20px;">Do you KEEP your case or SWAP to the last remaining case?</div>
+                <div id="finalButtons" style="display: flex; gap: 20px; justify-content: center;"></div>
+            `;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            // Get the button container
+            const finalButtons = modalContent.querySelector('#finalButtons');
+
+            // Create KEEP button
+            const keepButton = document.createElement('button');
+            keepButton.textContent = 'KEEP MY CASE';
+            keepButton.className = 'modal-btn';
+            keepButton.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+            keepButton.style.color = 'white';
+            keepButton.style.padding = '15px 25px';
+            keepButton.style.fontSize = '16px';
+            keepButton.style.fontWeight = 'bold';
+            keepButton.style.border = 'none';
+            keepButton.style.borderRadius = '8px';
+            keepButton.style.cursor = 'pointer';
+            keepButton.style.transition = 'all 0.3s ease';
+            keepButton.style.minWidth = '150px';
+            keepButton.onmouseover = () => keepButton.style.transform = 'translateY(-2px)';
+            keepButton.onmouseout = () => keepButton.style.transform = 'translateY(0)';
+            keepButton.onclick = () => handleFinalDecision('KEEP');
+
+            // Create SWAP button
+            const swapButton = document.createElement('button');
+            swapButton.textContent = 'SWAP CASE';
+            swapButton.className = 'modal-btn';
+            swapButton.style.background = 'linear-gradient(45deg, #ff9800, #ffc107)';
+            swapButton.style.color = 'black';
+            swapButton.style.padding = '15px 25px';
+            swapButton.style.fontSize = '16px';
+            swapButton.style.fontWeight = 'bold';
+            swapButton.style.border = 'none';
+            swapButton.style.borderRadius = '8px';
+            swapButton.style.cursor = 'pointer';
+            swapButton.style.transition = 'all 0.3s ease';
+            swapButton.style.minWidth = '150px';
+            swapButton.onmouseover = () => swapButton.style.transform = 'translateY(-2px)';
+            swapButton.onmouseout = () => swapButton.style.transform = 'translateY(0)';
+            swapButton.onclick = () => handleFinalDecision('SWAP');
+
+            finalButtons.appendChild(keepButton);
+            finalButtons.appendChild(swapButton);
+        }
+
+        // Handle final KEEP/SWAP decision
+        function handleFinalDecision(choice) {
+            if (choice === 'SWAP') {
+                // Find the last remaining case
+                const finalCase = gameState.cases.find(c => !c.opened && c.number !== gameState.originalPlayerCase);
+                if (finalCase) {
+                    gameState.playerCase = finalCase.number;
+                    console.log(`Player swapped to case ${finalCase.number}`);
+                }
+            } else {
+                console.log(`Player kept original case ${gameState.originalPlayerCase}`);
+            }
+
+            // Reveal all remaining cases and show final result
+            revealFinalCases(choice);
+        }
+
+        // Reveal final cases and show result
+        function revealFinalCases(playerChoice) {
+            // Reveal the player's chosen case
+            const playerCaseData = gameState.cases.find(c => c.number === gameState.playerCase);
+            const playerAmount = playerCaseData?.value ?? 0;
+
+            // Find and reveal the other final case
+            const otherFinalCase = gameState.cases.find(c => !c.opened && c.number !== gameState.playerCase);
+            let otherAmount = 0;
+            if (otherFinalCase) {
+                otherFinalCase.opened = true; // Mark as opened
+                otherAmount = otherFinalCase.value ?? 0;
+
+                // Update the case display
+                updateCasesGrid();
+            }
+
+            // Create result popup modal
+            const modalOverlay = document.createElement('div');
+            modalOverlay.id = 'resultModal';
+            modalOverlay.style.position = 'fixed';
+            modalOverlay.style.top = '0';
+            modalOverlay.style.left = '0';
+            modalOverlay.style.width = '100%';
+            modalOverlay.style.height = '100%';
+            modalOverlay.style.background = 'rgba(0, 0, 0, 0.9)';
+            modalOverlay.style.zIndex = '1000';
+            modalOverlay.style.display = 'flex';
+            modalOverlay.style.justifyContent = 'center';
+            modalOverlay.style.alignItems = 'center';
+
+            const modalContent = document.createElement('div');
+            modalContent.style.background = '#1e3c72';
+            modalContent.style.color = 'white';
+            modalContent.style.padding = '40px';
+            modalContent.style.borderRadius = '20px';
+            modalContent.style.border = '4px solid #ffd700';
+            modalContent.style.maxWidth = '600px';
+            modalContent.style.textAlign = 'center';
+            modalContent.style.boxShadow = '0 0 30px rgba(0,0,0,0.8)';
+
+            let resultText = `Player chose to ${playerChoice.toUpperCase()} and won ${formatCurrency(playerAmount)}!\n`;
+            if (playerChoice === 'SWAP') {
+                resultText += `They swapped from case ${gameState.originalPlayerCase} which had ${formatCurrency(otherAmount)}.`;
+            } else {
+                resultText += `They kept case ${gameState.playerCase}. The other final case had ${formatCurrency(otherAmount)}.`;
+            }
+
+            modalContent.innerHTML = `
+                <div style="font-size: 32px; font-weight: bold; color: #ffd700; margin-bottom: 20px;">🎉 GAME RESULT 🎉</div>
+                <div style="font-size: 20px; line-height: 1.6; margin-bottom: 30px;">${resultText}</div>
+                <button id="continueBtn" style="background: linear-gradient(45deg, #4CAF50, #66BB6A); color: white; padding: 15px 30px; font-size: 18px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s ease;">NEW GAME</button>
+            `;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            // Remove the final decision modal
+            const modal = document.getElementById('finalModal');
+            if (modal) modal.remove();
+
+            // End the game
+            gameState.gameActive = false;
+            gameState.finalRound = false;
+
+            // Update history with final details
+            updateHistory();
+
+            // Set up new game button
+            document.getElementById('continueBtn').onclick = function() {
+                const resultModal = document.getElementById('resultModal');
+                if (resultModal) resultModal.remove();
+                startNewGame();
+            };
+
+            console.log(`Game ended: Player ${playerChoice}d and won ${formatCurrency(playerAmount)}`);
+        }
+
         // Show decision buttons after offer is made
         function showDecisionButtons() {
+            console.log('showDecisionButtons() called');
             const gameStatus = document.getElementById('gameStatus');
 
             // Remove existing buttons first
@@ -978,6 +1261,7 @@
             }
 
             // Create new button container
+            console.log('Creating decision button container');
             const buttonContainer = document.createElement('div');
             buttonContainer.className = 'decision-buttons';
             buttonContainer.style.display = 'flex';

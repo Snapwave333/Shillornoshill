@@ -9,18 +9,22 @@
     "start": "electron .",
     "build": "electron-builder --win",
     "release": "electron-builder --win --publish always",
-    "postinstall": "echo Postinstall completed"
+    "postinstall": "echo Postinstall completed",
+    "icons": "node scripts/generate-icon.js"
   },
   "dependencies": {
     "electron-updater": "^6.3.11"
   },
   "devDependencies": {
     "electron": "^31.3.0",
-    "electron-builder": "^24.9.5"
+    "electron-builder": "^24.9.5",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.4"
   },
   "build": {
     "appId": "com.shill.or.no.shill",
     "productName": "Shill Or No Shill",
+    "icon": "build/icon.png",
     "files": [
       "**/*",
       "!backups/**",
@@ -39,9 +43,13 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         }
       ],
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {
@@ -50,7 +58,10 @@
       "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "shortcutName": "Shill Or No Shill"
     },
     "fileAssociations": [
       {

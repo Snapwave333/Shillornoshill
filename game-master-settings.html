@@ -479,22 +479,16 @@
             <div class="settings-panel">
                 <h2 class="panel-title">Prize Configuration</h2>
 
-                <!-- Prize Scale Multiplier -->
+                <!-- Max Prize Amount (replaces Prize Scale Multiplier) -->
                 <div class="setting-group">
                     <label class="setting-label">
-                        Prize Scale Multiplier
+                        Max Prize Amount ($)
                     </label>
                     <div class="setting-description">
-                        Adjusts the overall dollar value range of all prizes. The AI will scale all defined case values proportionally based on this setting.
+                        Enter the maximum large prize amount. The game will scale other case values from $0 up to this maximum.
                     </div>
-                    <div class="slider-container">
-                        <input type="range" class="slider" id="prizeScaleSlider" min="1" max="100" value="1" oninput="updateSliderValue('prizeScaleSlider', 'prizeScaleValue')">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                            <span style="color: #888; font-size: 0.9rem;">1x</span>
-                            <span class="slider-value" id="prizeScaleValue">1x</span>
-                            <span style="color: #888; font-size: 0.9rem;">100x</span>
-            </div>
-        </div>
+                    <input type="number" class="setting-input" id="maxPrizeInput" value="100" min="1" step="1" placeholder="e.g., 100" oninput="updateMaxPrizeFromInput()">
+                </div>
 
                 <!-- Number of Cases -->
                 <div class="setting-group">
@@ -654,7 +648,7 @@
     <script>
         // Game Master Settings State
         let gameSettings = {
-            prizeScaleMultiplier: 1,
+            maxPrizeAmount: 100,
             numberOfCases: 26,
             maxDollarBoxes: 5,
             zeroAmountCases: 1,
@@ -678,16 +672,11 @@
             setupAutoSave();
         }
 
-        // Update slider values
-        function updateSliderValue(sliderId, valueId) {
-            const slider = document.getElementById(sliderId);
-            const valueElement = document.getElementById(valueId);
-
-            if (sliderId === 'prizeScaleSlider') {
-                gameSettings.prizeScaleMultiplier = parseInt(slider.value);
-                valueElement.textContent = slider.value + 'x';
-            }
-
+        // Update Max Prize input
+        function updateMaxPrizeFromInput() {
+            const input = document.getElementById('maxPrizeInput');
+            const val = parseFloat(input.value);
+            gameSettings.maxPrizeAmount = (isFinite(val) && val > 0) ? val : 100;
             updateSettingsSummary();
         }
 
@@ -729,18 +718,25 @@
             caseSequenceInput.removeEventListener('input', updateCaseSequence);
             caseSequenceInput.addEventListener('input', updateCaseSequence);
 
-            const baseValues = [0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000];
-            const scaledValues = baseValues.map(value => Math.round(value * gameSettings.prizeScaleMultiplier * 100) / 100);
+            // Generate sample values from $0 up to maxPrizeAmount using an exponential curve
+            const sampleCount = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+            const max = gameSettings.maxPrizeAmount || 100;
+            const gamma = 3; // curvature for spacing (higher -> more small values)
+            const scaledValues = Array.from({ length: sampleCount }, (_, i) => {
+                const ratio = i / (sampleCount - 1);
+                const val = max * Math.pow(ratio, gamma);
+                return Math.round(val * 100) / 100; // round to cents
+            });
 
             summary.innerHTML = `
                 <div style="border-bottom: 1px solid rgba(255,255,0,0.3); padding-bottom: 15px; margin-bottom: 15px;">
                     <strong>🎯 PRIZE CONFIGURATION</strong>
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <strong>Prize Scale Multiplier:</strong> ${gameSettings.prizeScaleMultiplier}x
+                    <strong>Max Prize Amount:</strong> ${isFinite(max) ? ('$' + max.toLocaleString()) : '$100'}
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <strong>Sample Scaled Values:</strong><br>
+                    <strong>Sample Values (scaled 0 → max):</strong><br>
                     <span style="font-size: 0.8rem; color: #ffaa00;">
                         ${scaledValues.slice(0, 8).join(' → ')} → ... → ${scaledValues.slice(-3).join(' → ')}
                     </span>
@@ -805,8 +801,9 @@
                     gameSettings = { ...gameSettings, ...loadedSettings };
 
                     // Update UI elements
-                    document.getElementById('prizeScaleSlider').value = gameSettings.prizeScaleMultiplier;
-                    document.getElementById('prizeScaleValue').textContent = gameSettings.prizeScaleMultiplier + 'x';
+                    // Max prize input
+                    const mpi = document.getElementById('maxPrizeInput');
+                    if (mpi) mpi.value = gameSettings.maxPrizeAmount;
                     document.getElementById('numCases').textContent = gameSettings.numberOfCases;
                     document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
                     document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;

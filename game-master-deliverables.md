@@ -6,42 +6,36 @@
 
 ```
 FUNCTION InitializeGame(gameSettings)
-    // Step 1: Generate base prize values
-    baseValues ← [0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000]
-
-    // Step 2: Apply prize scale multiplier
-    scaledValues ← []
-    FOR EACH value IN baseValues
-        scaledValue ← value × gameSettings.prizeScaleMultiplier
-        scaledValues.append(scaledValue)
-
-    // Step 3: Generate case distribution
+    // Step 1: Read max prize configuration
+    maxPrize ← gameSettings.maxPrizeAmount          // Largest possible case value (USD)
     totalCases ← gameSettings.numberOfCases
-    highValueCases ← gameSettings.maxDollarBoxes
     zeroCases ← gameSettings.zeroAmountCases
+    highValueCases ← gameSettings.maxDollarBoxes
+
+    // Step 2: Generate prize distribution from $0 → maxPrize using an exponential curve
+    // curveExponent controls how quickly values ramp up (1.0 = linear, >1 = more low/mid values)
+    curveExponent ← 2.0
+    distributedValues ← []
+    FOR i FROM 0 TO (totalCases - 1)
+        t ← i / (totalCases - 1)                    // Normalized position [0,1]
+        value ← ROUND( (t ^ curveExponent) × maxPrize, -2 )  // Round to nearest $100
+        distributedValues.append(value)
+
+    // Step 3: Ensure zero-amount traps are exactly $0
+    FOR i FROM 1 TO zeroCases
+        distributedValues[i-1] ← 0
     standardCases ← totalCases - highValueCases - zeroCases
 
     // Step 4: Create value distribution
     gameValues ← []
 
-    // Add zero-value traps
-    FOR i FROM 1 TO zeroCases
-        gameValues.append(0.01)
-
-    // Add high-value cases (scaled)
-    highValueBase ← [1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000]
-    FOR i FROM 1 TO highValueCases
-        IF i ≤ LENGTH(highValueBase)
-            scaledHighValue ← highValueBase[i-1] × gameSettings.prizeScaleMultiplier
-            gameValues.append(scaledHighValue)
-
-    // Fill remaining with scaled standard values
-    standardBase ← [0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750]
-    remainingNeeded ← standardCases - (highValueCases - LENGTH(highValueBase))
-    FOR i FROM 1 TO remainingNeeded
-        valueIndex ← (i-1) % LENGTH(standardBase)
-        scaledStandard ← standardBase[valueIndex] × gameSettings.prizeScaleMultiplier
-        gameValues.append(scaledStandard)
+    // Step 4: Compose final game values
+    // - Take top N values near maxPrize for high-value cases
+    // - Keep the lowest values (including zeros) as traps/mid-tier
+    sortedAsc ← SORT_ASC(distributedValues)
+    trapsAndMid ← TAKE_FIRST(sortedAsc, standardCases)
+    topTier ← TAKE_LAST(sortedAsc, highValueCases)
+    gameValues ← CONCAT(trapsAndMid, topTier)
 
     // Step 5: Shuffle and assign to cases
     shuffledValues ← shuffle(gameValues)
@@ -139,7 +133,7 @@ FUNCTION ProcessGameRound(currentRound, casesOpened, gameSettings)
 ```json
 {
   "gameConfiguration": {
-    "prizeScaleMultiplier": 1,
+    "maxPrizeAmount": 100000,
     "numberOfCases": 26,
     "maxDollarBoxes": 5,
     "zeroAmountCases": 1,
@@ -177,7 +171,12 @@ FUNCTION ProcessGameRound(currentRound, casesOpened, gameSettings)
     "totalCases": 26,
     "remainingCases": 25
   },
-  "remainingValues": [0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000],
+  "remainingValues": [0, 0, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 800, 1200, 2500, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 65000, 80000, 90000, 100000],
+  
+  // Example distribution with Max Prize: $100,000 and one $0 trap
+  // Values scale smoothly from $0 → $100,000
+  // (Actual values depend on curve exponent and rounding)
+  // "remainingValues": [0, 0, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 800, 1200, 2500, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 65000, 80000, 90000, 100000],
   "currentOffer": {
     "amount": 25000,
     "currency": "USD",
@@ -276,8 +275,8 @@ FUNCTION ProcessGameRound(currentRound, casesOpened, gameSettings)
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  ⚙️ PRIZE CONFIGURATION                             │   │
 │  │  ┌─────────────────────────────────────────────┐   │   │
-│  │  │ Prize Scale: ███████████████████░░░░ 15x     │   │   │
-│  │  │ [1x]─────────[50x]──────────────[100x]       │   │   │
+│  │  │ Max Prize: $100,000                          │   │   │
+│  │  │ [ $100 ]────────[ $10k ]────────[ $100k ]    │   │   │
 │  │  └─────────────────────────────────────────────┘   │   │
 │  │  ┌─────────────────────────────────────────────┐   │   │
 │  │  │ Cases: [─] 26 [+]  High-Value: [─] 5 [+]    │   │   │
@@ -298,8 +297,8 @@ FUNCTION ProcessGameRound(currentRound, casesOpened, gameSettings)
 │                                                             │
 │  📊 CONFIGURATION PREVIEW                                   │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ 🎯 PRIZE CONFIG: 15x Scale                          │   │
-│  │ Sample Values: $0.15 → $15 → $150 → ... → $15M     │   │
+│  │ 🎯 PRIZE CONFIG: Max Prize = $100,000                │   │
+│  │ Sample Values: $0 → $100 → $1,200 → ... → $100,000  │   │
 │  │ Total Cases: 26 | High Value: 5 | Traps: 1          │   │
 │  │                                                     │   │
 │  │ 🎮 GAME FLOW: 6→5→4→3→2→1→1 cases per round        │   │
@@ -318,10 +317,10 @@ FUNCTION ProcessGameRound(currentRound, casesOpened, gameSettings)
 
 | Parameter | Description | Range | Default | Impact |
 |-----------|-------------|-------|---------|---------|
-| **Prize Scale Multiplier** | Scales all case values proportionally | 1-100x | 1x | Affects entire prize pool magnitude |
+| **Max Prize Amount ($)** | Sets the largest case value; all other values scale 0 → max | $100-$1,000,000 | $100 | Defines prize pool ceiling and distribution |
 | **Number of Cases** | Total briefcases in game | 10-50 | 26 | Changes game duration and complexity |
-| **High-Value Cases** | Cases worth $1,000+ (scaled) | 1-10 | 5 | Controls jackpot frequency |
-| **Zero-Amount Cases** | $0.01 trap cases | 0-5 | 1 | Adds tension and risk |
+| **High-Value Cases** | Count of top-tier cases near max prize | 1-10 | 5 | Controls jackpot frequency |
+| **Zero-Amount Cases** | $0 trap cases | 0-5 | 1 | Adds tension and risk |
 
 ### Game Flow Variables
 
@@ -502,7 +501,7 @@ FUNCTION TriggerCaseContent(caseNumber)
 ```json
 {
   "gameConfiguration": {
-    "prizeScaleMultiplier": 1,
+    "maxPrizeAmount": 100000,
     "numberOfCases": 26,
     "maxDollarBoxes": 5,
     "zeroAmountCases": 1,

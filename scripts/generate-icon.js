@@ -18,14 +18,17 @@ async function ensureDir(p) {
 
 async function main() {
   const projectRoot = path.join(__dirname, '..');
-  const sourcePng = path.join(projectRoot, 'hill-or-no-shill-logo.png');
+  // Prefer AI SVG app icon if present; otherwise fallback to existing PNG logo
+  const aiSvg = path.join(projectRoot, 'assets', 'images', 'icons', 'ai', 'app-icon.svg');
+  const fallbackPng = path.join(projectRoot, 'hill-or-no-shill-logo.png');
+  const sourcePath = fs.existsSync(aiSvg) ? aiSvg : fallbackPng;
   const buildDir = path.join(projectRoot, 'build');
   const pngOutDir = path.join(buildDir, 'icons');
 
   const sizes = [16, 32, 48, 64, 128, 256];
 
-  if (!fs.existsSync(sourcePng)) {
-    console.error('Source logo not found:', sourcePng);
+  if (!fs.existsSync(sourcePath)) {
+    console.error('Source logo not found:', sourcePath);
     process.exitCode = 1;
     return;
   }
@@ -37,7 +40,7 @@ async function main() {
   const pngPaths = [];
   for (const size of sizes) {
     const outPath = path.join(pngOutDir, `${size}.png`);
-    await sharp(sourcePng)
+    await sharp(sourcePath)
       .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png()
       .toFile(outPath);
@@ -51,7 +54,7 @@ async function main() {
 
   console.log('Preparing icon.png (256x256)...');
   const iconPngPath = path.join(buildDir, 'icon.png');
-  await sharp(sourcePng)
+  await sharp(sourcePath)
     .resize(256, 256, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toFile(iconPngPath);

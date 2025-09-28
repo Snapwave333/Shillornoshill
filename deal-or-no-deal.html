@@ -454,10 +454,7 @@
         <div class="controller-panel">
             <div class="controller-title">HOST CONTROLLER</div>
 
-            <div class="max-prize-section">
-                <input type="number" class="max-prize-input" id="maxPrizeAmount" placeholder="Enter Max Prize Amount ($)" min="1" step="100">
-                <button class="set-max-prize-btn" onclick="setMaxPrize()">SET MAX PRIZE</button>
-            </div>
+            <!-- Max prize input removed: max winnings amount is configured only in game-master-settings.html -->
 
             <div class="offer-section">
                 <input type="number" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($)" min="0" step="100">
@@ -1020,18 +1017,7 @@
             return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
         }
 
-        // Set maximum prize amount
-        function setMaxPrize() {
-            const maxPrizeInput = document.getElementById('maxPrizeAmount');
-            const maxPrize = parseFloat(maxPrizeInput.value);
-
-            if (maxPrize && maxPrize > 0) {
-                customMaxPrize = maxPrize;
-                maxPrizeInput.value = '';
-                document.getElementById('gameStatus').textContent = `Maximum prize set to ${formatCurrency(maxPrize)}. Start a new game to use it!`;
-                console.log(`Custom max prize set to: ${customMaxPrize}`);
-            }
-        }
+        // Max prize input removed: use gameMasterSettings.maxPrizeAmount via applyGameMasterSettings()
 
         // Generate custom prize values from $0 to customMaxPrize
         function generateCustomPrizeValues(numCases) {

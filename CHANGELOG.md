@@ -18,3 +18,13 @@
   - Confirmed GitHub Actions workflow `release.yml` to build and publish on tag `v*` using `npm run release`.
 
 Notes: If the AI SVG is missing, the icon generation gracefully falls back to the existing PNG logo.
+
+## 1.1.1
+
+- Updater reliability improvements
+  - Added `electron-log` integration for autoUpdater diagnostics.
+  - Configured `autoInstallOnAppQuit` and disabled prerelease updates.
+  - Enhanced event logging for checking, availability, progress, and installation.
+
+- Dependency updates
+  - Added `electron-log` to dependencies for production logging.

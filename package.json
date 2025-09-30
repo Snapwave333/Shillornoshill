@@ -1,6 +1,6 @@
 {
   "name": "shill-or-no-shill-app",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Shill Or No Shill packaged as a Windows desktop app",
   "main": "electron/main.js",
   "author": "",
@@ -13,7 +13,8 @@
     "icons": "node scripts/generate-icon.js"
   },
   "dependencies": {
-    "electron-updater": "^6.3.11"
+    "electron-updater": "^6.3.11",
+    "electron-log": "^5.1.4"
   },
   "devDependencies": {
     "electron": "^31.3.0",

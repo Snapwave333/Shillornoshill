@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, Notification } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const path = require('path');
 const fs = require('fs');
 
@@ -152,45 +153,59 @@ function setupAutoUpdater() {
   if (!app.isPackaged) return;
   // Download updates automatically and notify
   autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.logger = log;
+  log.transports.file.level = 'info';
 
   autoUpdater.on('checking-for-update', () => {
+    log.info('Updater: checking for updates');
     const n = new Notification({ title: 'Updater', body: 'Checking for updates...' });
     n.show();
   });
 
   autoUpdater.on('update-available', (info) => {
+    log.info('Updater: update available', info);
     const n = new Notification({ title: 'Updater', body: `Update available: v${info.version}. Downloading...` });
     n.show();
   });
 
   autoUpdater.on('update-not-available', () => {
+    log.info('Updater: no updates available');
     const n = new Notification({ title: 'Updater', body: 'You are on the latest version.' });
     n.show();
   });
 
   autoUpdater.on('download-progress', (progress) => {
+    log.info('Updater: download progress', progress);
     if (mainWindow) {
       const percent = progress.percent ? progress.percent / 100 : undefined;
       mainWindow.setProgressBar(typeof percent === 'number' ? percent : 0);
     }
   });
 
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', (info) => {
+    log.info('Updater: update downloaded', info);
     const n = new Notification({ title: 'Updater', body: 'Update downloaded. The app will restart to install.' });
     n.show();
     // Quit and install (will restart the app)
-    autoUpdater.quitAndInstall();
+    setTimeout(() => {
+      try { autoUpdater.quitAndInstall(); } catch (e) { log.error('Updater: quitAndInstall failed', e); }
+    }, 1000);
   });
 
   autoUpdater.on('error', (err) => {
+    log.error('Updater: error', err);
     const n = new Notification({ title: 'Updater Error', body: String(err || 'Unknown error') });
     n.show();
   });
 
   // Initial check on startup
   try {
+    log.info('Updater: initial checkForUpdatesAndNotify');
     autoUpdater.checkForUpdatesAndNotify();
   } catch (e) {
+    log.error('Updater: initial check failed', e);
     const n = new Notification({ title: 'Updater Error', body: String(e) });
     n.show();
   }

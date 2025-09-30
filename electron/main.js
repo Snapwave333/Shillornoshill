@@ -55,8 +55,8 @@ function createWindow() {
     }
   });
 
-  // Load the game HTML
-  mainWindow.loadFile(path.join(__dirname, '..', 'deal-or-no-deal.html'));
+  // Load Settings by default on startup
+  mainWindow.loadFile(path.join(__dirname, '..', 'game-master-settings.html'));
 
   mainWindow.on('closed', () => {
     try {

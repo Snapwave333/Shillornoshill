@@ -681,19 +681,8 @@
                 console.log('Applied custom case opening sequence:', gameState.customOpeningSequence);
             }
 
-            // Apply zero-amount cases (traps)
-            if (gameMasterSettings.zeroAmountCases !== undefined) {
-                gameState.zeroAmountCases = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
-                // Force the lowest values to be trap amounts (set to $0) regardless of scale
-                if (Array.isArray(gameState.values) && gameState.values.length > 0) {
-                    const sorted = [...gameState.values].sort((a, b) => a - b);
-                    for (let i = 0; i < gameState.zeroAmountCases && i < sorted.length; i++) {
-                        sorted[i] = 0;
-                    }
-                    gameState.values = sorted;
-                }
-                console.log(`Applied zero-amount cases (traps): ${gameState.zeroAmountCases}`);
-            }
+            // Zero-amount trap logic disabled: all case values are manual via Game Master
+            // gameState.zeroAmountCases is preserved for UI but does not alter values
         }
 
         // Initialize the game
@@ -711,10 +700,10 @@
             // Apply settings that affect prize generation
             applyGameMasterSettings();
 
-            // Use custom values override if enabled; otherwise use scaled or standard values
+            // Use only custom override; default to all zeros until set by Game Master
             let values;
-            let usingCustomOverride = false;
-            const hasOverride = !!(gameMasterSettings?.useCustomValues && Array.isArray(gameMasterSettings.customValuesOverride) && gameMasterSettings.customValuesOverride.length > 0);
+            let usingCustomOverride = true;
+            const hasOverride = !!(Array.isArray(gameMasterSettings?.customValuesOverride) && gameMasterSettings.customValuesOverride.length > 0);
 
             // Helper: parse raw string to dollar number with cent precision
             const parseAmountToDollars = (raw) => {
@@ -730,30 +719,15 @@
             };
 
             if (hasOverride) {
-                usingCustomOverride = true;
                 // Build values directly from override, respecting numCases
                 const override = gameMasterSettings.customValuesOverride.slice(0, numCases);
                 values = override.map(v => parseAmountToDollars(v));
             } else {
-                // Fall back to customMaxPrize scaling or base standard values
-                if (customMaxPrize && customMaxPrize > 0) {
-                    values = generateCustomPrizeValues(numCases);
-                } else {
-                    values = [...BASE_STANDARD_VALUES];
-                }
+                // Default all values to $0.00 until Game Master updates
+                values = Array.from({ length: numCases }, () => 0);
             }
 
-            // Legacy: prizeScaleMultiplier support removed in favor of max prize input
-
-            // Apply zero-amount cases only when NOT using custom override
-            if (!usingCustomOverride && gameMasterSettings?.zeroAmountCases !== undefined) {
-                const zeroCount = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
-                const sorted = [...values].sort((a, b) => a - b);
-                for (let i = 0; i < zeroCount && i < sorted.length; i++) {
-                    sorted[i] = 0;
-                }
-                values = sorted;
-            }
+            // Remove AI scaling and zero-amount traps logic; values are fully manual
 
             // Ensure values count matches number of cases
             values = values.slice(0, numCases);
@@ -766,8 +740,7 @@
                 while (values.length < numCases) values.push(padValue);
             }
 
-            // Shuffle values for random case assignment
-            values = values.sort(() => Math.random() - 0.5);
+            // Do not shuffle: keep index mapping so Game Master inputs align with cases
 
             // Assign values to cases upfront
             gameState.cases = Array.from({ length: numCases }, (_, i) => ({
@@ -801,18 +774,35 @@
             updateCasesGrid();
         }
 
-        // Update the values grid
+        // Update the values grid (descending order, accurate duplicate handling)
         function updateValuesGrid() {
             const valuesGrid = document.getElementById('valuesGrid');
             valuesGrid.innerHTML = '';
 
-            gameState.values.forEach((value, index) => {
+            // Sort all values high → low for display
+            const sortedValues = [...gameState.values].sort((a, b) => b - a);
+
+            // Build remaining counts map to handle duplicates precisely
+            const keyOf = (v) => Number.isFinite(v) ? Number(v.toFixed(2)).toString() : String(v);
+            const remainingCounts = {};
+            gameState.remainingValues.forEach(v => {
+                const k = keyOf(v);
+                remainingCounts[k] = (remainingCounts[k] || 0) + 1;
+            });
+
+            sortedValues.forEach((value, index) => {
+                const k = keyOf(value);
+                const count = remainingCounts[k] || 0;
+
                 const valueItem = document.createElement('div');
                 valueItem.className = 'value-item';
                 valueItem.textContent = formatCurrency(value);
-                valueItem.dataset.index = index;
+                valueItem.dataset.index = String(index);
 
-                if (!gameState.remainingValues.includes(value)) {
+                if (count > 0) {
+                    // Consume one remaining instance
+                    remainingCounts[k] = count - 1;
+                } else {
                     valueItem.classList.add('eliminated');
                 }
 

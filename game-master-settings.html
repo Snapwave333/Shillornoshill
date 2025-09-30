@@ -782,7 +782,7 @@
 
             autoSaveInterval: 60,
             customCaseContent: {}, // Store custom images/sounds per case
-            useCustomValues: false,
+            useCustomValues: true,
             customValuesOverride: [], // store raw amounts as strings
             // UI effects
             overlayIntensity: 0.6, // 0.0 - 1.0
@@ -817,6 +817,16 @@
         // Initialize the page
         function initializePage() {
             loadSettings();
+            // Force manual values mode and seed zeros until updated
+            try {
+                const count = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+                gameSettings.useCustomValues = true;
+                if (!Array.isArray(gameSettings.customValuesOverride) || gameSettings.customValuesOverride.length < count) {
+                    gameSettings.customValuesOverride = Array.from({ length: count }, () => '0.00');
+                }
+                saveSettings();
+            } catch {}
+
             populateCaseSelector();
             updateSettingsSummary();
             setupAutoSave();
@@ -1102,12 +1112,10 @@
             // Decide initial values for inputs
             let initialValues = [];
             const override = Array.isArray(gameSettings.customValuesOverride) ? gameSettings.customValuesOverride : [];
-            if (gameSettings.useCustomValues && override.length > 0) {
+            if (override.length > 0) {
                 initialValues = override.slice(0, count);
-            } else if (Array.isArray(previewValues) && previewValues.length > 0) {
-                initialValues = previewValues.slice(0, count);
             } else {
-                initialValues = computeScaledValues(count);
+                initialValues = Array.from({ length: count }, () => '0.00');
             }
 
             // If fewer values than count, pad with last known or 0
@@ -1186,14 +1194,13 @@
         }
 
         function toggleCustomValuesMode() {
+            // Manual values mode is enforced; keep toggle ON
             const cb = document.getElementById('useCustomValuesToggle');
-            gameSettings.useCustomValues = !!cb.checked;
+            gameSettings.useCustomValues = true;
+            if (cb) cb.checked = true;
             reflectCustomModeInUI();
             saveSettings();
-            // When toggling off, rehydrate editor from scaling preview
-            if (!gameSettings.useCustomValues) {
-                renderCaseValueGrid();
-            }
+            renderCaseValueGrid();
             updateSettingsSummary();
         }
 
@@ -1204,7 +1211,7 @@
             const zeroMinus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', -1)\"]");
             const zeroPlus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', 1)\"]");
 
-            if (cb) cb.checked = !!gameSettings.useCustomValues;
+            if (cb) { cb.checked = true; cb.disabled = true; }
             if (notice) notice.style.display = gameSettings.useCustomValues ? 'block' : 'none';
 
             if (maxPrizeInput) maxPrizeInput.disabled = !!gameSettings.useCustomValues;

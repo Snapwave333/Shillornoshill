@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="gradOffer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B3FF8F"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g stroke="url(#gradOffer)" stroke-width="3" fill="none" filter="url(#softGlow)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Briefcase -->
+    <rect x="12" y="22" width="40" height="26" rx="4" ry="4"/>
+    <path d="M24 22 v-6 h16 v6"/>
+    <path d="M12 30 h40"/>
+    <!-- Latch -->
+    <rect x="30" y="33" width="4" height="6" fill="url(#gradOffer)" stroke="none"/>
+  </g>
+</svg>

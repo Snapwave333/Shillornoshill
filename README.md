@@ -102,6 +102,16 @@ https://github.com/Snapwave333/Shillornoshill/releases
   - Case/prize concept art
   - Themed backgrounds
 
+### Asset prompts and specs
+See `assets/ai/prompts.md` for standardized prompts, sizes, and filenames for:
+- Backgrounds (Game/Settings),
+- Banker portrait,
+- 26 numbered briefcases,
+- UI icons (start, settings, restart, banker, offer),
+- Logo variants.
+
+Placeholder assets are already checked in under `assets/images/` so you can preview layout before replacing them with your generated images.
+
 ### Screenshots & Concept Art
 Below are AI-styled concept visuals that illustrate the app screens:
 

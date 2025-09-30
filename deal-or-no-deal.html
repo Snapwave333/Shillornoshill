@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: #0c1020 url('assets/images/backgrounds/game-gradient.svg') center/cover fixed no-repeat;
             color: white;
             height: 100vh;
             overflow: hidden;
@@ -109,18 +109,23 @@
         }
 
         .case {
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #1e3c72;
-            border: 2px solid #ffd700;
+            background: rgba(20,25,53,0.6);
+            background-image: url('assets/images/cases/case-body.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 95% auto;
+            color: #ffffff;
+            border: 2px solid #4FD1FF;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-height: 60px;
+            min-height: 90px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
         }
 
         .case:hover {
@@ -130,6 +135,7 @@
 
         .case.opened {
             background: linear-gradient(45deg, #333, #555);
+            background-image: none;
             color: #ffd700;
             animation: reveal 0.5s ease;
         }
@@ -166,6 +172,9 @@
         .new-game-btn {
             background: linear-gradient(45deg, #4CAF50, #66BB6A);
             color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .new-game-btn:hover {
@@ -178,6 +187,9 @@
             color: white;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .settings-btn::before {
@@ -207,6 +219,54 @@
         @keyframes shine {
             0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
             100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        /* Small icon styling */
+        .icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+
+        /* Adjustable background overlay for tuning intensity/color */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: var(--bg-tint, #000000);
+            opacity: var(--bg-overlay-opacity, 0.20);
+            pointer-events: none;
+        }
+
+        /* Case number styling */
+        .case-number {
+            font-family: var(--ui-font, 'Montserrat'), 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 24px;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 8px rgba(79,209,255,0.6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Button hover pulse */
+        .control-btn {
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .control-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+        }
+        .control-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Case open glow animation */
+        @keyframes caseGlow {
+            0% { box-shadow: 0 0 0 rgba(255,215,0,0.0); }
+            30% { box-shadow: 0 0 25px rgba(255,215,0,0.9); }
+            100% { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
         }
 
         .game-status {
@@ -419,8 +479,69 @@
     </style>
     <!-- Load Montserrat font and apply globally -->
     <link rel="stylesheet" href="assets/css/fonts.css">
+    <!-- Window Titlebar Styles -->
+    <style>
+        .titlebar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px 0 12px;
+            background: rgba(0,0,0,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
+            -webkit-app-region: drag; /* draggable area when frameless */
+            z-index: 10000;
+        }
+        .titlebar .app-title {
+            color: #e6e6e6;
+            font-size: 0.95rem;
+            letter-spacing: 0.6px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .titlebar .window-buttons {
+            display: flex;
+            gap: 6px;
+            -webkit-app-region: no-drag; /* allow clicks */
+        }
+        .titlebar .btn {
+            width: 36px; height: 24px;
+            display: grid; place-items: center;
+            border-radius: 6px;
+            color: #fff;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            cursor: pointer;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .titlebar .btn:hover { background: rgba(255,255,255,0.12); }
+        .titlebar .btn:active { transform: translateY(1px); }
+        .titlebar .btn-close:hover { background: #ff4d4f; border-color: #ff4d4f; }
+        .titlebar-spacer { height: 36px; }
+    </style>
 </head>
 <body>
+    <div class="titlebar">
+        <div class="app-title">Shill Or No Shill — Game</div>
+        <div class="window-buttons">
+            <button id="btn-min" class="btn" title="Minimize">—</button>
+            <button id="btn-max" class="btn" title="Maximize/Restore">▢</button>
+            <button id="btn-close" class="btn btn-close" title="Close">✕</button>
+        </div>
+    </div>
+    <div class="titlebar-spacer"></div>
+    <script>
+    (function(){
+        const wc = window.windowControls;
+        const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+        bind('btn-min', () => wc?.minimize?.());
+        bind('btn-max', () => wc?.maximizeOrRestore?.());
+        bind('btn-close', () => wc?.close?.());
+    })();
+    </script>
     <div class="container">
         <!-- Left Column - Monetary Values -->
         <div class="values-panel">
@@ -439,9 +560,13 @@
             </div>
 
             <div class="game-controls">
-                <button class="control-btn new-game-btn" onclick="startNewGame()">NEW GAME</button>
-                <button class="control-btn settings-btn" onclick="openGameMasterSettings()" title="Game Master Settings">
-                    <span style="font-size: 16px;">⚙️</span> SETTINGS
+                <button id="newGameBtn" class="control-btn new-game-btn" onclick="startNewGame()">
+                    <img class="icon" src="assets/images/icons/start.svg" alt="Start">
+                    NEW GAME
+                </button>
+                <button id="settingsBtn" class="control-btn settings-btn" onclick="openGameMasterSettings()" title="Game Master Settings">
+                    <img class="icon" src="assets/images/icons/settings.svg" alt="Settings">
+                    SETTINGS
                 </button>
             </div>
 
@@ -452,13 +577,15 @@
 
         <!-- Right Column - Controller and History -->
         <div class="controller-panel">
-            <div class="controller-title">HOST CONTROLLER</div>
+            <div class="controller-title"><img class="icon" src="assets/images/icons/banker.svg" alt="Host"> HOST CONTROLLER</div>
 
             <!-- Max prize input removed: max winnings amount is configured only in game-master-settings.html -->
 
             <div class="offer-section">
                 <input type="number" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($)" min="0" step="100">
-                <button class="set-offer-btn" onclick="setManualOffer()">SET OFFER</button>
+                <button id="setOfferBtn" class="set-offer-btn" onclick="setManualOffer()">
+                    <img class="icon" src="assets/images/icons/offer.svg" alt="Offer"> SET OFFER
+                </button>
                 <!-- Manual Banker offers only - no suggestions needed -->
             </div>
 
@@ -584,18 +711,42 @@
             // Apply settings that affect prize generation
             applyGameMasterSettings();
 
-            // Use custom max prize values if set, otherwise start from standard values
+            // Use custom values override if enabled; otherwise use scaled or standard values
             let values;
-            if (customMaxPrize && customMaxPrize > 0) {
-                values = generateCustomPrizeValues(numCases);
+            let usingCustomOverride = false;
+            const hasOverride = !!(gameMasterSettings?.useCustomValues && Array.isArray(gameMasterSettings.customValuesOverride) && gameMasterSettings.customValuesOverride.length > 0);
+
+            // Helper: parse raw string to dollar number with cent precision
+            const parseAmountToDollars = (raw) => {
+                if (typeof raw !== 'string') {
+                    const n = Number(raw);
+                    if (!isFinite(n) || n < 0) return 0;
+                    return Math.round(n * 100) / 100;
+                }
+                const sanitized = raw.replace(/[,\s]/g, '');
+                const n = Number(sanitized);
+                if (!isFinite(n) || n < 0) return 0;
+                return Math.round(n * 100) / 100;
+            };
+
+            if (hasOverride) {
+                usingCustomOverride = true;
+                // Build values directly from override, respecting numCases
+                const override = gameMasterSettings.customValuesOverride.slice(0, numCases);
+                values = override.map(v => parseAmountToDollars(v));
             } else {
-                values = [...BASE_STANDARD_VALUES];
+                // Fall back to customMaxPrize scaling or base standard values
+                if (customMaxPrize && customMaxPrize > 0) {
+                    values = generateCustomPrizeValues(numCases);
+                } else {
+                    values = [...BASE_STANDARD_VALUES];
+                }
             }
 
             // Legacy: prizeScaleMultiplier support removed in favor of max prize input
 
-            // Apply zero-amount cases (force lowest values to $0)
-            if (gameMasterSettings?.zeroAmountCases !== undefined) {
+            // Apply zero-amount cases only when NOT using custom override
+            if (!usingCustomOverride && gameMasterSettings?.zeroAmountCases !== undefined) {
                 const zeroCount = Math.max(0, Math.min(5, gameMasterSettings.zeroAmountCases));
                 const sorted = [...values].sort((a, b) => a - b);
                 for (let i = 0; i < zeroCount && i < sorted.length; i++) {
@@ -677,19 +828,32 @@
             gameState.cases.forEach(caseData => {
                 const caseElement = document.createElement('div');
                 caseElement.className = 'case';
-                caseElement.textContent = caseData.number;
                 caseElement.dataset.caseNumber = caseData.number;
 
                 if (caseData.opened) {
                     caseElement.classList.add('opened');
                     caseElement.textContent = formatCurrency(caseData.value);
-                } else if (gameState.playerCase === caseData.number) {
-                    caseElement.classList.add('selected');
+                } else {
+                    const num = document.createElement('span');
+                    num.className = 'case-number';
+                    num.textContent = caseData.number;
+                    caseElement.appendChild(num);
+                    if (gameState.playerCase === caseData.number) {
+                        caseElement.classList.add('selected');
+                    }
                 }
 
                 caseElement.onclick = () => selectCase(caseData.number);
                 casesGrid.appendChild(caseElement);
             });
+            // Click sound delegated to case grid
+            (function(){
+                const onceHandler = (ev) => {
+                    if (ev.target && ev.target.closest('.case')) { try { playTone(554.37, 0.08, 'sine'); } catch(e){} }
+                    casesGrid.removeEventListener('click', onceHandler);
+                };
+                casesGrid.addEventListener('click', onceHandler);
+            })();
         }
 
         // Select a case
@@ -708,6 +872,8 @@
                 }
 
                 updateCasesGrid();
+                // Show any configured attachments for the selected case
+                maybeShowCaseAttachment(caseNumber);
                 return;
             }
 
@@ -746,6 +912,9 @@
             gameState.cases[caseIndex].opened = true;
             const openedValue = gameState.cases[caseIndex].value;
 
+            // Show any configured attachments for the opened case
+            maybeShowCaseAttachment(caseNumber, openedValue);
+
             // Remove from remaining values
             const valueIndex = gameState.remainingValues.indexOf(openedValue);
             if (valueIndex !== -1) {
@@ -777,6 +946,64 @@
 
             updateCasesGrid();
             updateValuesGrid();
+        }
+
+        // ===== Case Attachments (Image/Audio) from Game Master Settings =====
+        function maybeShowCaseAttachment(caseNumber, amount) {
+            try {
+                const conf = gameMasterSettings?.customCaseContent?.[caseNumber];
+                if (!conf || (!conf.image && !conf.sound)) return;
+                openCaseAttachmentModal(conf, amount);
+            } catch (e) {
+                console.error('Error showing case attachment:', e);
+            }
+        }
+
+        function openCaseAttachmentModal(conf, amount) {
+            const modal = document.getElementById('caseAttachmentModal');
+            const imgEl = document.getElementById('attachmentImage');
+            const audioEl = document.getElementById('attachmentAudio');
+            const amountEl = document.getElementById('attachmentAmount');
+
+            if (!modal || !imgEl || !audioEl) return;
+
+            if (conf.image) {
+                imgEl.src = conf.image;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.style.display = 'none';
+                imgEl.removeAttribute('src');
+            }
+
+            if (conf.sound) {
+                audioEl.src = conf.sound;
+                audioEl.style.display = 'block';
+                // Attempt to autoplay
+                audioEl.play().catch(() => {});
+            } else {
+                audioEl.style.display = 'none';
+                audioEl.removeAttribute('src');
+            }
+
+            // Show the opened case amount if provided
+            if (typeof amount === 'number' && isFinite(amount) && amountEl) {
+                amountEl.textContent = `Opened Amount: ${formatCurrency(amount)}`;
+                amountEl.style.display = 'block';
+            } else if (amountEl) {
+                amountEl.textContent = '';
+                amountEl.style.display = 'none';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeCaseAttachmentModal() {
+            const modal = document.getElementById('caseAttachmentModal');
+            const audioEl = document.getElementById('attachmentAudio');
+            if (audioEl) {
+                try { audioEl.pause(); } catch (_) {}
+            }
+            if (modal) modal.style.display = 'none';
         }
 
         // Highlight opened value temporarily
@@ -1365,6 +1592,64 @@
         window.onload = function() {
             initializeGame();
         };
+    </script>
+    <!-- Case Attachment Modal (Image/Audio) -->
+    <div id="caseAttachmentModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: #111; border: 2px solid rgba(255,215,0,0.7); border-radius: 12px; padding: 16px; width: min(640px, 92vw); color: #ffd700; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+            <button onclick="closeCaseAttachmentModal()" style="position: absolute; top: 8px; right: 8px; background: transparent; border: 1px solid rgba(255,215,0,0.7); color: #ffd700; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✖ Close</button>
+            <div id="attachmentAmount" style="display:none; font-size: 1.4rem; font-weight: 700; color: #ffd700; text-align: center; margin: 8px 0 4px;">Opened Amount: $0.00</div>
+            <div style="text-align: center; margin-bottom: 12px;">
+                <img id="attachmentImage" alt="Case Attachment" style="max-width: 100%; max-height: 60vh; border-radius: 8px; display: none;" />
+            </div>
+            <audio id="attachmentAudio" controls style="width: 100%; display: none;"></audio>
+        </div>
+    </div>
+    <script>
+    (function(){
+      // Load fonts.css dynamically to ensure Montserrat is available
+      try { var link=document.createElement('link'); link.rel='stylesheet'; link.href='assets/css/fonts.css'; document.head.appendChild(link); } catch(e){}
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      let audioCtx;
+      function ensureCtx(){ if(!audioCtx) audioCtx = new AudioCtx(); }
+      window.playTone = function(freq=440, dur=0.1, type='sine'){
+        try {
+          ensureCtx();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime+0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime+dur);
+        } catch(e) {}
+      };
+
+      window.addEventListener('DOMContentLoaded', function(){
+        try {
+          var newGameBtn=document.getElementById('newGameBtn'); if(newGameBtn) newGameBtn.addEventListener('click', function(){ playTone(880,0.07,'triangle'); });
+          var settingsBtn=document.getElementById('settingsBtn'); if(settingsBtn) settingsBtn.addEventListener('click', function(){ playTone(660,0.06,'square'); });
+          var setOfferBtn=document.getElementById('setOfferBtn'); if(setOfferBtn) setOfferBtn.addEventListener('click', function(){ playTone(330,0.08,'sine'); });
+
+          // Auto-swap icons to AI versions if present
+          var icons=document.querySelectorAll('img.icon');
+          icons.forEach(function(img){ (async function(){
+            var src=img.getAttribute('src');
+            var candidates=[
+              src.replace(/\.svg$/i,'.png'),
+              src.replace(/assets\/images\/icons\//,'assets/images/icons/ai/'),
+              src.replace(/\.svg$/i,'-ai.svg')
+            ];
+            for (var i=0;i<candidates.length;i++){
+              try{ var res=await fetch(candidates[i], { cache: 'no-cache' }); if(res && res.ok){ img.src=candidates[i]; break; } }catch(e){}
+            }
+          })(); });
+        } catch(e){}
+      });
+    })();
     </script>
 </body>
 </html>

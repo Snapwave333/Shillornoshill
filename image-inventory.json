@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "filename":  "New folder (3)/assets/extracted/images/Aspose.Words.f341fd55-28f7-4238-ae34-7100e34c5b31.001.png",
         "width":  816,
@@ -49,4 +49,17 @@
 
                           }
     }
+    ,
+    { "filename": "New folder (3)/assets/images/icons/start.svg", "width": 1024, "height": 1024, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/settings.svg", "width": 1024, "height": 1024, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/restart.svg", "width": 1024, "height": 1024, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/banker.svg", "width": 1024, "height": 1024, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/offer.svg", "width": 1024, "height": 1024, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/cases/case-template.svg", "width": 512, "height": 512, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/backgrounds/game-gradient.svg", "width": 1920, "height": 1080, "aspect_ratio": 1.7778, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/backgrounds/settings-gradient.svg", "width": 1920, "height": 1080, "aspect_ratio": 1.7778, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/ai/start.svg", "width": 64, "height": 64, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/ai/settings.svg", "width": 64, "height": 64, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/ai/banker.svg", "width": 64, "height": 64, "aspect_ratio": 1, "format": "svg", "referenced_in": {} },
+    { "filename": "New folder (3)/assets/images/icons/ai/offer.svg", "width": 64, "height": 64, "aspect_ratio": 1, "format": "svg", "referenced_in": {} }
 ]

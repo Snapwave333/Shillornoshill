@@ -46,10 +46,12 @@ function createWindow() {
     height: 800,
     fullscreen: !!windowPrefs.fullscreen,
     resizable: !!windowPrefs.resizable,
+    frame: false,
     icon: fs.existsSync(icoPath) ? icoPath : fallbackIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     }
   });
 
@@ -280,6 +282,26 @@ function setupAutoUpdater() {
     n.show();
   }
 }
+
+// IPC handlers for window controls
+const { ipcMain, BrowserWindow: BW } = require('electron');
+ipcMain.handle('win:minimize', () => {
+  const win = BW.getFocusedWindow() || mainWindow;
+  if (win) win.minimize();
+});
+ipcMain.handle('win:maximizeOrRestore', () => {
+  const win = BW.getFocusedWindow() || mainWindow;
+  if (!win) return;
+  if (win.isMaximized()) {
+    win.restore();
+  } else {
+    win.maximize();
+  }
+});
+ipcMain.handle('win:close', () => {
+  const win = BW.getFocusedWindow() || mainWindow;
+  if (win) win.close();
+});
 
 // Single instance lock to route protocol/args
 const gotLock = app.requestSingleInstanceLock();

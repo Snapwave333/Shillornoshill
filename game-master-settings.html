@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            background: #0a0a0a url('assets/images/backgrounds/settings-gradient.svg') center/cover fixed no-repeat;
             color: #ffffff;
             min-height: 100vh;
             padding: 20px;
@@ -34,6 +34,7 @@
                 radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
             animation: backgroundShift 20s ease-in-out infinite;
+            opacity: var(--bgOverlayOpacity, 0.6);
             z-index: -1;
         }
 
@@ -83,6 +84,9 @@
             animation: gradientShift 3s ease-in-out infinite;
             margin-bottom: 10px;
             text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
         }
 
         @keyframes gradientShift {
@@ -238,6 +242,7 @@
             min-width: 60px;
             text-align: center;
         }
+
 
         .input-group {
             display: flex;
@@ -473,29 +478,86 @@
     </style>
     <!-- Load Montserrat font and apply globally -->
     <link rel="stylesheet" href="assets/css/fonts.css">
+    </style>
+    <!-- Load Montserrat font and apply globally -->
+    <link rel="stylesheet" href="assets/css/fonts.css">
+    <!-- Window Titlebar Styles -->
+    <style>
+        .titlebar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px 0 12px;
+            background: rgba(0,0,0,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
+            -webkit-app-region: drag; /* draggable area when frameless */
+            z-index: 10000;
+        }
+        .titlebar .app-title {
+            color: #e6e6e6;
+            font-size: 0.95rem;
+            letter-spacing: 0.6px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .titlebar .window-buttons {
+            display: flex;
+            gap: 6px;
+            -webkit-app-region: no-drag; /* allow clicks */
+        }
+        .titlebar .btn {
+            width: 36px; height: 24px;
+            display: grid; place-items: center;
+            border-radius: 6px;
+            color: #fff;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            cursor: pointer;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .titlebar .btn:hover { background: rgba(255,255,255,0.12); }
+        .titlebar .btn:active { transform: translateY(1px); }
+        .titlebar .btn-close:hover { background: #ff4d4f; border-color: #ff4d4f; }
+        .titlebar-spacer { height: 36px; }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div class="titlebar">
+        <div class="app-title">Shill Or No Shill — Settings</div>
+        <div class="window-buttons">
+            <button id="btn-min" class="btn" title="Minimize">—</button>
+            <button id="btn-max" class="btn" title="Maximize/Restore">▢</button>
+            <button id="btn-close" class="btn btn-close" title="Close">✕</button>
+        </div>
+    </div>
+    <div class="titlebar-spacer"></div>
+    <script>
+    (function(){
+        const wc = window.windowControls;
+        const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+        bind('btn-min', () => wc?.minimize?.());
+        bind('btn-max', () => wc?.maximizeOrRestore?.());
+        bind('btn-close', () => wc?.close?.());
+    })();
+    </script>
         <div class="header">
-            <h1>Game Master Control Center</h1>
+            <h1><img id="settingsHeaderIcon" src="assets/images/icons/settings.svg" alt="Settings" style="width:40px;height:40px;vertical-align:middle"> Game Master Control Center</h1>
             <p>Configure Your Shill or No Shill Experience</p>
         </div>
-        <!-- Settings Preview moved to top for operator visibility -->
-        <div class="preview-section">
-            <h2 class="preview-title">Configuration Preview</h2>
-            <div class="settings-summary" id="settingsSummary">
-                Loading configuration preview...
-            </div>
-        </div>
-
-        <!-- Top Action Buttons -->
-        <div class="action-buttons">
-            <button class="action-btn btn-save" onclick="saveSettings()">Save Configuration</button>
-            <button class="action-btn btn-launch" onclick="launchGame()">Launch Game</button>
-            <button class="action-btn btn-export" onclick="exportSettings()">Export Settings</button>
-        </div>
+        
 
         <div class="settings-grid">
+            <!-- Settings Preview (moved above Prize Configuration) -->
+            <div class="preview-section">
+                <h2 class="preview-title">Configuration Preview</h2>
+                <div class="settings-summary" id="settingsSummary">
+                    Loading configuration preview...
+                </div>
+            </div>
             <!-- Prize Configuration Panel -->
             <div class="settings-panel">
                 <h2 class="panel-title">Prize Configuration</h2>
@@ -556,6 +618,38 @@
             </div>
         </div>
 
+                <!-- Case Value Editor Toggle -->
+                <div class="setting-group">
+                    <label class="setting-label">Case Value Editor Mode</label>
+                    <div class="setting-description">
+                        Switch between Standard Scaled Game and Custom Value Game. In Custom mode, the manual values below override scaling and zero-amount traps.
+                    </div>
+                    <div class="input-group">
+                        <label style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="useCustomValuesToggle" onchange="toggleCustomValuesMode()">
+                            Use Custom Case Values (override)
+                        </label>
+                    </div>
+                    <div id="customModeNotice" style="display:none; margin-top:8px; font-size:0.85rem; color:#ffcc66;">
+                        Custom mode enabled: Max Prize Amount and Zero-Amount Cases are disabled.
+                    </div>
+                </div>
+
+                <!-- Case Value Editor Grid -->
+                <div class="setting-group" id="caseValueEditor">
+                    <label class="setting-label">Case Value Editor</label>
+                    <div class="setting-description">
+                        Manually set the dollar amount for each briefcase. Inputs are initialized from the current scaling preview. Values are stored as strings for integrity.
+                    </div>
+                    <div id="caseValueGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px;">
+                        <!-- populated dynamically -->
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+                        <button class="action-btn btn-save" id="applyCustomValuesBtn" onclick="applyCustomValues()">APPLY CUSTOM VALUES</button>
+                        <button class="action-btn btn-export" id="clearCustomValuesBtn" onclick="clearCustomValues()">Clear Custom Values</button>
+                    </div>
+                </div>
+            
             <!-- Game Flow Configuration Panel -->
             <div class="settings-panel">
                 <h2 class="panel-title">Game Flow Configuration</h2>
@@ -646,15 +740,35 @@
                 </select>
             </div>
 
+            <!-- UI Effects -->
+            <div class="setting-group">
+                <label class="setting-label">UI Effects</label>
+                <div class="setting-description">
+                    Toggle interface sound effects and adjust background overlay intensity.
+                </div>
+                <div class="input-group" style="flex-wrap: wrap; gap:16px;">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="sfxEnabledToggle"> Enable UI Sound Effects
+                    </label>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span>Background Overlay:</span>
+                        <input type="range" id="overlayIntensity" class="slider" min="0" max="100" value="60">
+                        <span class="slider-value" id="overlayIntensityValue">60%</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
+        
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button class="action-btn btn-save" onclick="saveSettings()">Save Configuration</button>
-            <button class="action-btn btn-launch" onclick="launchGame()">Launch Game</button>
-            <button class="action-btn btn-export" onclick="exportSettings()">Export Settings</button>
+            <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
+            <button class="action-btn" onclick="launchGame()">Launch Game</button>
+            <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
         </div>
-    </div>
+    
 
     <script>
         // Game Master Settings State
@@ -667,8 +781,33 @@
 
 
             autoSaveInterval: 60,
-            customCaseContent: {} // Store custom images/sounds per case
+            customCaseContent: {}, // Store custom images/sounds per case
+            useCustomValues: false,
+            customValuesOverride: [], // store raw amounts as strings
+            // UI effects
+            overlayIntensity: 0.6, // 0.0 - 1.0
+            sfxEnabled: true
         };
+
+        // Simple UI tone generator (no external assets)
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let uiAudioContext = null;
+        function playUITone(freq = 660, duration = 0.12, volume = 0.06) {
+            try {
+                if (!gameSettings.sfxEnabled || !AudioCtx) return;
+                if (!uiAudioContext) uiAudioContext = new AudioCtx();
+                const now = uiAudioContext.currentTime;
+                const osc = uiAudioContext.createOscillator();
+                const gain = uiAudioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                osc.connect(gain).connect(uiAudioContext.destination);
+                osc.start(now);
+                osc.stop(now + duration);
+            } catch {}
+        }
 
         // Current case being edited
         let currentEditingCase = null;
@@ -681,6 +820,67 @@
             populateCaseSelector();
             updateSettingsSummary();
             setupAutoSave();
+            initializeCaseValueEditor();
+            reflectCustomModeInUI();
+            setupUIAudioAndOverlay();
+            autoSwapAIIcons();
+        }
+
+        function setupUIAudioAndOverlay() {
+            // SFX toggle
+            const sfxToggle = document.getElementById('sfxEnabledToggle');
+            if (sfxToggle) {
+                sfxToggle.checked = !!gameSettings.sfxEnabled;
+                sfxToggle.addEventListener('change', () => {
+                    gameSettings.sfxEnabled = !!sfxToggle.checked;
+                    saveSettings();
+                });
+            }
+
+            // Overlay intensity slider
+            const overlaySlider = document.getElementById('overlayIntensity');
+            const overlayVal = document.getElementById('overlayIntensityValue');
+            const applyOverlay = (val01) => {
+                document.body.style.setProperty('--bgOverlayOpacity', String(val01));
+            };
+            if (overlaySlider && overlayVal) {
+                // Sync from settings
+                const pct = Math.round((gameSettings.overlayIntensity ?? 0.6) * 100);
+                overlaySlider.value = String(pct);
+                overlayVal.textContent = pct + '%';
+                applyOverlay((gameSettings.overlayIntensity ?? 0.6));
+
+                overlaySlider.addEventListener('input', () => {
+                    const v = Math.max(0, Math.min(100, parseInt(overlaySlider.value || '60')));
+                    overlayVal.textContent = v + '%';
+                    gameSettings.overlayIntensity = v / 100;
+                    applyOverlay(gameSettings.overlayIntensity);
+                });
+                overlaySlider.addEventListener('change', () => saveSettings());
+            }
+
+            // Button sound hooks
+            const applyBtn = document.getElementById('applyCustomValuesBtn');
+            if (applyBtn) applyBtn.addEventListener('click', () => playUITone(740, 0.14, 0.06));
+            const saveBtn = document.getElementById('saveSettingsBtn');
+            if (saveBtn) saveBtn.addEventListener('click', () => playUITone(520, 0.12, 0.06));
+        }
+
+        // Swap header/settings icons to AI variants, fallback to original on error
+        function autoSwapAIIcons() {
+            const imgs = Array.from(document.querySelectorAll('img'));
+            imgs.forEach(img => {
+                const src = img.getAttribute('src') || '';
+                // Only attempt for known icons in assets/images/icons
+                const m = src.match(/assets\/images\/icons\/(.*)\.svg$/);
+                if (m) {
+                    const baseName = m[1];
+                    const aiPath = `assets/images/icons/ai/${baseName}.svg`;
+                    const original = src;
+                    img.onerror = () => { img.onerror = null; img.src = original; };
+                    img.src = aiPath;
+                }
+            });
         }
 
         // Update Max Prize input
@@ -699,6 +899,8 @@
                     document.getElementById('numCases').textContent = gameSettings.numberOfCases;
                     // Keep the case selector in sync with the number of cases
                     populateCaseSelector();
+                    // Re-render case value editor to match new count
+                    renderCaseValueGrid();
                     break;
                 case 'maxDollarBoxes':
                     gameSettings.maxDollarBoxes = Math.max(1, Math.min(10, gameSettings.maxDollarBoxes + delta));
@@ -722,6 +924,8 @@
             updateSettingsSummary();
         }
 
+        // Collapsible behavior removed
+
         // Update settings summary
         function updateSettingsSummary() {
             const summary = document.getElementById('settingsSummary');
@@ -741,37 +945,274 @@
                 return Math.round(val * 100) / 100; // round to cents
             });
 
+            // Build a compact table and charts
+            const modeLabel = gameSettings.useCustomValues ? 'Custom Value Game' : 'Standard Scaled Game';
             summary.innerHTML = `
-                <div style="border-bottom: 1px solid rgba(255,255,0,0.3); padding-bottom: 15px; margin-bottom: 15px;">
-                    <strong>🎯 PRIZE CONFIGURATION</strong>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Max Prize Amount:</strong> ${isFinite(max) ? ('$' + max.toLocaleString()) : '$100'}
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Sample Values (scaled 0 → max):</strong><br>
-                    <span style="font-size: 0.8rem; color: #ffaa00;">
-                        ${scaledValues.slice(0, 8).join(' → ')} → ... → ${scaledValues.slice(-3).join(' → ')}
-                    </span>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Total Cases:</strong> ${gameSettings.numberOfCases}
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>High-Value Cases (≥$1,000):</strong> ${gameSettings.maxDollarBoxes}
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Zero-Amount Traps:</strong> ${gameSettings.zeroAmountCases}
-                </div>
+                <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Overview</div>
+                <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Metric</th>
+                            <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Max Prize Amount</td>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${isFinite(max) ? ('$' + max.toLocaleString()) : '$100'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Total Cases</td>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.numberOfCases}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">High-Value Cases (≥$1,000)</td>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.maxDollarBoxes}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Zero-Amount Traps</td>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.zeroAmountCases}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Mode</td>
+                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${modeLabel}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                <div style="border-bottom: 1px solid rgba(255,255,0,0.3); padding-bottom: 15px; margin-bottom: 15px; margin-top: 20px;">
-                    <strong>🎮 GAME FLOW</strong>
+                <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;"> 
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px;">
+                        <div style="font-weight: 600; margin-bottom: 6px; color: #ffea00;">Case Value Distribution</div>
+                        <canvas id="valuesChart" width="600" height="240"></canvas>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px;">
+                        <div style="font-weight: 600; margin-bottom: 6px; color: #ffea00;">Round Opening Sequence (cases per round)</div>
+                        <canvas id="sequenceChart" width="600" height="240"></canvas>
+                    </div>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Opening Sequence:</strong> ${gameSettings.caseOpeningSequence.join(' → ')} cases per round
-                </div>
-                <!-- Banker and crypto summaries removed -->
             `;
+
+            // Keep the editor values coherent with preview when not in custom mode
+            if (!gameSettings.useCustomValues) {
+                renderCaseValueGrid(scaledValues);
+            }
+
+            // Render simple charts without external libraries
+            drawCharts(scaledValues, gameSettings.caseOpeningSequence);
+        }
+
+        function drawCharts(values, sequence) {
+            try {
+                const vc = document.getElementById('valuesChart');
+                const sc = document.getElementById('sequenceChart');
+                if (vc) drawBarChart(vc, values, { color: '#00e5ff', yLabel: '$' });
+                if (sc) drawBarChart(sc, sequence, { color: '#ff00ff', yLabel: '' });
+            } catch (e) {
+                console.warn('Chart render skipped:', e);
+            }
+        }
+
+        function drawBarChart(canvas, data, opts) {
+            if (!canvas || !data || data.length === 0) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            // Scale for HiDPI
+            canvas.width = canvas.width * dpr;
+            canvas.height = canvas.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = canvas.width / dpr;
+            const height = canvas.height / dpr;
+            const padding = 28;
+            const chartW = width - padding * 2;
+            const chartH = height - padding * 2;
+            const maxVal = Math.max(...data);
+            const barCount = data.length;
+            const gap = 2;
+            const barW = Math.max(2, (chartW - gap * (barCount - 1)) / barCount);
+
+            // Clear
+            ctx.clearRect(0, 0, width, height);
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Y axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + chartH);
+            // X axis
+            ctx.lineTo(padding + chartW, padding + chartH);
+            ctx.stroke();
+
+            // Grid lines
+            const gridLines = 4;
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            for (let i = 1; i <= gridLines; i++) {
+                const y = padding + chartH - (chartH * i / gridLines);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartW, y);
+                ctx.stroke();
+            }
+
+            // Bars
+            ctx.fillStyle = opts?.color || '#00e5ff';
+            const startX = padding;
+            for (let i = 0; i < barCount; i++) {
+                const val = data[i];
+                const h = maxVal > 0 ? (val / maxVal) * chartH : 0;
+                const x = startX + i * (barW + gap);
+                const y = padding + chartH - h;
+                ctx.fillRect(x, y, barW, h);
+            }
+
+            // Simple y-axis labels (min/mid/max)
+            ctx.fillStyle = '#ffffffcc';
+            ctx.font = '12px Montserrat, sans-serif';
+            const minLabel = opts?.yLabel ? `${opts.yLabel}0` : '0';
+            const midLabel = opts?.yLabel ? `${opts.yLabel}${Math.round(maxVal/2)}` : `${Math.round(maxVal/2)}`;
+            const maxLabel = opts?.yLabel ? `${opts.yLabel}${Math.round(maxVal)}` : `${Math.round(maxVal)}`;
+            ctx.fillText(minLabel, padding - 18, padding + chartH + 12);
+            ctx.fillText(midLabel, padding - 28, padding + chartH/2 + 4);
+            ctx.fillText(maxLabel, padding - 28, padding + 12);
+        }
+
+        // ===== CASE VALUE EDITOR (Custom Values) =====
+        function computeScaledValues(count) {
+            const sampleCount = Math.max(10, Math.min(50, count || gameSettings.numberOfCases));
+            const max = gameSettings.maxPrizeAmount || 100;
+            const gamma = 3;
+            return Array.from({ length: sampleCount }, (_, i) => {
+                const ratio = i / (sampleCount - 1);
+                const val = max * Math.pow(ratio, gamma);
+                return Math.round(val * 100) / 100; // cents
+            });
+        }
+
+        function initializeCaseValueEditor() {
+            renderCaseValueGrid();
+        }
+
+        function renderCaseValueGrid(previewValues) {
+            const grid = document.getElementById('caseValueGrid');
+            if (!grid) return;
+            const count = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+
+            // Decide initial values for inputs
+            let initialValues = [];
+            const override = Array.isArray(gameSettings.customValuesOverride) ? gameSettings.customValuesOverride : [];
+            if (gameSettings.useCustomValues && override.length > 0) {
+                initialValues = override.slice(0, count);
+            } else if (Array.isArray(previewValues) && previewValues.length > 0) {
+                initialValues = previewValues.slice(0, count);
+            } else {
+                initialValues = computeScaledValues(count);
+            }
+
+            // If fewer values than count, pad with last known or 0
+            while (initialValues.length < count) {
+                initialValues.push(initialValues[initialValues.length - 1] ?? 0);
+            }
+
+            grid.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'display:flex; flex-direction:column; gap:6px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:10px;';
+
+                const label = document.createElement('label');
+                label.textContent = `Case ${i + 1}`;
+                label.style.cssText = 'font-size:0.85rem; color:#ccc;';
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `caseValueInput_${i + 1}`;
+                input.className = 'setting-input';
+                input.placeholder = 'e.g., 1000 or 0.01';
+                // Store raw string for integrity, but hydrate with initial numeric value
+                const v = initialValues[i];
+                input.value = (typeof v === 'string') ? v : String(v);
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                grid.appendChild(wrapper);
+            }
+        }
+
+        function applyCustomValues() {
+            const count = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+            const values = [];
+            const errors = [];
+
+            for (let i = 1; i <= count; i++) {
+                const el = document.getElementById(`caseValueInput_${i}`);
+                if (!el) continue;
+                const raw = (el.value || '').trim();
+                if (raw === '') { errors.push(`Case ${i} is empty`); continue; }
+                // Validate number-like; allow commas
+                const sanitized = raw.replace(/[,\s]/g, '');
+                const num = Number(sanitized);
+                if (!isFinite(num) || num < 0) {
+                    errors.push(`Case ${i} has invalid amount`);
+                }
+                values.push(raw); // store raw string for integrity
+            }
+
+            if (errors.length) {
+                alert('Please fix the following before applying:\n\n' + errors.join('\n'));
+                return;
+            }
+
+            gameSettings.customValuesOverride = values;
+            gameSettings.useCustomValues = true;
+            reflectCustomModeInUI();
+            saveSettings();
+            updateSettingsSummary();
+
+            // Feedback
+            const btn = document.getElementById('applyCustomValuesBtn');
+            const orig = btn.textContent;
+            btn.textContent = '✅ APPLIED';
+            setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+
+        function clearCustomValues() {
+            gameSettings.customValuesOverride = [];
+            gameSettings.useCustomValues = false;
+            reflectCustomModeInUI();
+            saveSettings();
+            renderCaseValueGrid();
+            updateSettingsSummary();
+        }
+
+        function toggleCustomValuesMode() {
+            const cb = document.getElementById('useCustomValuesToggle');
+            gameSettings.useCustomValues = !!cb.checked;
+            reflectCustomModeInUI();
+            saveSettings();
+            // When toggling off, rehydrate editor from scaling preview
+            if (!gameSettings.useCustomValues) {
+                renderCaseValueGrid();
+            }
+            updateSettingsSummary();
+        }
+
+        function reflectCustomModeInUI() {
+            const cb = document.getElementById('useCustomValuesToggle');
+            const notice = document.getElementById('customModeNotice');
+            const maxPrizeInput = document.getElementById('maxPrizeInput');
+            const zeroMinus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', -1)\"]");
+            const zeroPlus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', 1)\"]");
+
+            if (cb) cb.checked = !!gameSettings.useCustomValues;
+            if (notice) notice.style.display = gameSettings.useCustomValues ? 'block' : 'none';
+
+            if (maxPrizeInput) maxPrizeInput.disabled = !!gameSettings.useCustomValues;
+            if (zeroMinus) zeroMinus.disabled = !!gameSettings.useCustomValues;
+            if (zeroPlus) zeroPlus.disabled = !!gameSettings.useCustomValues;
+
+            const editor = document.getElementById('caseValueEditor');
+            if (editor) editor.style.opacity = gameSettings.useCustomValues ? '1' : '1'; // always visible; toggle just disables conflicting controls
         }
 
         // Save settings to localStorage
@@ -821,7 +1262,19 @@
                     document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
                     document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;
                     document.getElementById('caseSequence').value = gameSettings.caseOpeningSequence.join(', ');
+                    // UI effects
+                    const sfxToggle = document.getElementById('sfxEnabledToggle');
+                    if (sfxToggle) sfxToggle.checked = !!gameSettings.sfxEnabled;
+                    const overlaySlider = document.getElementById('overlayIntensity');
+                    const overlayVal = document.getElementById('overlayIntensityValue');
+                    const pct = Math.round((gameSettings.overlayIntensity ?? 0.6) * 100);
+                    if (overlaySlider) overlaySlider.value = String(pct);
+                    if (overlayVal) overlayVal.textContent = pct + '%';
+                    document.body.style.setProperty('--bgOverlayOpacity', String(gameSettings.overlayIntensity ?? 0.6));
                     // Banker and crypto settings removed: no UI updates necessary
+                    // Reflect custom values toggle and grid
+                    reflectCustomModeInUI();
+                    initializeCaseValueEditor();
 
                 } catch (e) {
                     console.error('Error loading settings:', e);

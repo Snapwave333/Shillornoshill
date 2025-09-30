@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="gradBanker" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FF7CF7"/>
+    </linearGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g stroke="url(#gradBanker)" stroke-width="3" fill="none" filter="url(#softGlow)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Headset banker silhouette -->
+    <circle cx="32" cy="22" r="10"/>
+    <path d="M22 46 a18 12 0 0 1 20 0 v6 h-20 z"/>
+    <!-- Tie -->
+    <path d="M32 32 l-3 6 l3 6 l3 -6 z" fill="url(#gradBanker)" stroke="none"/>
+    <!-- Headset mic -->
+    <path d="M42 22 h4 a3 3 0 0 1 0 6 h-3"/>
+  </g>
+</svg>

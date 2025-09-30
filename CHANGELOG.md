@@ -28,3 +28,9 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
 
 - Dependency updates
   - Added `electron-log` to dependencies for production logging.
+
+## 1.1.2
+
+- Window preferences
+  - Added user-configurable Fullscreen and Resizable options in the View menu.
+  - Preferences persist to userData and are applied on launch.

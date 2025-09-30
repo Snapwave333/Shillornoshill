@@ -6,14 +6,46 @@ const fs = require('fs');
 
 let mainWindow;
 let tray;
+let windowPrefs = { fullscreen: true, resizable: true };
+
+function getPrefsPath() {
+  try {
+    return path.join(app.getPath('userData'), 'window-prefs.json');
+  } catch {
+    return path.join(__dirname, 'window-prefs.json');
+  }
+}
+
+function loadWindowPrefs() {
+  try {
+    const p = getPrefsPath();
+    if (fs.existsSync(p)) {
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+      windowPrefs = {
+        fullscreen: typeof data.fullscreen === 'boolean' ? data.fullscreen : windowPrefs.fullscreen,
+        resizable: typeof data.resizable === 'boolean' ? data.resizable : windowPrefs.resizable,
+      };
+    }
+  } catch (e) {}
+}
+
+function saveWindowPrefs() {
+  try {
+    const p = getPrefsPath();
+    const data = JSON.stringify(windowPrefs, null, 2);
+    fs.writeFileSync(p, data, 'utf8');
+  } catch (e) {}
+}
 
 function createWindow() {
+  loadWindowPrefs();
   const icoPath = path.join(__dirname, '..', 'build', 'icon.ico');
   const fallbackIcon = path.join(__dirname, '..', 'hill-or-no-shill-logo.png');
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    fullscreen: true,
+    fullscreen: !!windowPrefs.fullscreen,
+    resizable: !!windowPrefs.resizable,
     icon: fs.existsSync(icoPath) ? icoPath : fallbackIcon,
     webPreferences: {
       nodeIntegration: false,
@@ -25,6 +57,12 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '..', 'deal-or-no-deal.html'));
 
   mainWindow.on('closed', () => {
+    try {
+      // Persist latest state on close
+      windowPrefs.fullscreen = !!mainWindow?.isFullScreen();
+      windowPrefs.resizable = !!mainWindow?.isResizable();
+      saveWindowPrefs();
+    } catch {}
     mainWindow = null;
   });
 }
@@ -48,7 +86,39 @@ function setupMenu() {
     },
     {
       label: 'View',
-      submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }],
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        {
+          label: 'Fullscreen Mode',
+          type: 'checkbox',
+          checked: !!windowPrefs.fullscreen,
+          click: (menuItem) => {
+            try {
+              if (mainWindow) {
+                mainWindow.setFullScreen(menuItem.checked);
+                windowPrefs.fullscreen = !!menuItem.checked;
+                saveWindowPrefs();
+              }
+            } catch {}
+          },
+        },
+        {
+          label: 'Resizable Window',
+          type: 'checkbox',
+          checked: !!windowPrefs.resizable,
+          click: (menuItem) => {
+            try {
+              if (mainWindow) {
+                mainWindow.setResizable(!!menuItem.checked);
+                windowPrefs.resizable = !!menuItem.checked;
+                saveWindowPrefs();
+              }
+            } catch {}
+          },
+        },
+      ],
     },
     {
       label: 'Help',

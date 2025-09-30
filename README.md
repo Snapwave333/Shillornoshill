@@ -9,6 +9,7 @@ A lightweight, offline-friendly game inspired by Deal or No Deal. Configure priz
 - Prizes auto-scale from $0 to your chosen maximum; zero traps are forced to $0.
 - Settings persist locally via `localStorage` and can be overridden per game.
 - Runs in a web browser or as a Windows desktop app via Electron.
+ - Randomize case positions and reusable templates for rapid session setup.
 
 ## Quick Start
 
@@ -19,6 +20,7 @@ A lightweight, offline-friendly game inspired by Deal or No Deal. Configure priz
 3. Open:
    - Settings: `http://127.0.0.1:8080/game-master-settings.html`
    - Game: `http://127.0.0.1:8080/deal-or-no-deal.html`
+   - Tip: If port is busy, try `-p 8123`.
 
 ### Windows desktop app (Electron)
 Prerequisites: Node.js 18+, Git (optional), Windows 10/11.
@@ -91,6 +93,7 @@ https://github.com/Snapwave333/Shillornoshill/releases
 
 ### Build & Publish Notes
 - electron-builder is configured to publish to `Snapwave333/Shillornoshill`.
+ - See `RELEASE_NOTES.md` for version details; tag releases as `vX.Y.Z`.
 - Large binaries should use Git LFS or be attached to Releases instead of tracked in Git.
 - Build artifacts like `*.zip` are excluded from packaged app via electron-builder `files` config.
 
@@ -139,3 +142,12 @@ PRs welcome! Please open an issue with proposed changes. Follow conventional com
 
 ## License
 MIT © Snapwave333
+### Randomize Case Positions
+- On the Settings page, click `🎲 Randomize Case Positions` to shuffle how cases are displayed in the game grid.
+- Case values and numbers remain intact; only the visual order changes.
+- The game respects `gameSettings.caseOrder` when rendering.
+
+### Templates
+- Click `💾 Save as Template` to download a JSON file capturing current settings.
+- Click `📂 Load Template` to upload a previously saved template.
+- Template schema includes `schemaVersion`, `name`, `savedAt`, and `settings` fields.

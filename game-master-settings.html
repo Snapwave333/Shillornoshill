@@ -188,6 +188,47 @@
             margin-bottom: 15px;
             line-height: 1.4;
         }
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast {
+            position: relative;
+            max-width: 520px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #eaffff;
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 200ms ease-out;
+            pointer-events: auto;
+        }
+        .toast h4 { margin: 0; font-size: 0.95rem; color: #7ffcff; }
+        .toast p { margin: 0; font-size: 0.85rem; color: #cfefff; }
+        .toast-dismiss {
+            margin-left: auto;
+            width: 28px; height: 28px;
+            display: grid; place-items: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #eaffff;
+            cursor: pointer;
+        }
+        .toast-dismiss:hover { background: rgba(255,255,255,0.18); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         .slider-container {
             position: relative;
@@ -524,8 +565,9 @@
         .titlebar .btn-close:hover { background: #ff4d4f; border-color: #ff4d4f; }
         .titlebar-spacer { height: 36px; }
     </style>
+    <link rel="stylesheet" href="assets/css/liquid-glass.css">
 </head>
-<body>
+<body class="liquid-glass-theme">
     <div class="titlebar">
         <div class="app-title">Shill Or No Shill — Settings</div>
         <div class="window-buttons">
@@ -552,7 +594,7 @@
 
         <div class="settings-grid">
             <!-- Settings Preview (moved above Prize Configuration) -->
-            <div class="preview-section">
+            <div class="preview-section lg-glass">
                 <h2 class="preview-title">Configuration Preview</h2>
                 <div class="settings-summary" id="settingsSummary">
                     Loading configuration preview...
@@ -563,7 +605,7 @@
                 <h2 class="panel-title">Prize Configuration</h2>
 
                 <!-- Max Prize Amount (replaces Prize Scale Multiplier) -->
-                <div class="setting-group">
+                <div class="setting-group lg-glass">
                     <label class="setting-label">
                         Max Prize Amount ($)
                     </label>
@@ -636,7 +678,7 @@
                 </div>
 
                 <!-- Case Value Editor Grid -->
-                <div class="setting-group" id="caseValueEditor">
+                <div class="setting-group lg-glass" id="caseValueEditor">
                     <label class="setting-label">Case Value Editor</label>
                     <div class="setting-description">
                         Manually set the dollar amount for each briefcase. Inputs are initialized from the current scaling preview. Values are stored as strings for integrity.
@@ -666,7 +708,7 @@
                 </div>
 
                 <!-- Case Media Attachments -->
-                <div class="setting-group" id="caseMediaAttachments">
+                <div class="setting-group lg-glass" id="caseMediaAttachments">
                     <label class="setting-label">Case Media Attachments</label>
                     <div class="setting-description">
                         Attach images (including GIFs) and custom sound effects to specific cases. These will display in a popup when that case is opened during gameplay.
@@ -702,6 +744,7 @@
                             <div class="case-actions">
                                 <button class="action-btn-small" onclick="saveCaseConfig()">Save Case Config</button>
                                 <button class="action-btn-small secondary" onclick="clearCaseConfig()">Clear Config</button>
+                                <button class="action-btn-small" onclick="(function(){ const n = parseInt(document.getElementById('caseSelector').value); if (!n) { alert('Select a case to customize.'); return; } openCaseWizard(n); })()">Customize Wizard</button>
                                 <button class="action-btn-small" onclick="testCasePopup()">Test Popup</button>
                             </div>
                         </div>
@@ -767,7 +810,11 @@
             <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
             <button class="action-btn" onclick="launchGame()">Launch Game</button>
             <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
+            <button class="action-btn" id="randomizeCasePositionsBtn" onclick="randomizeCasePositions()">🎲 Randomize Case Positions</button>
+            <button class="action-btn" id="saveTemplateBtn" onclick="saveSettingsAsTemplate()">💾 Save as Template</button>
+            <button class="action-btn secondary" id="loadTemplateBtn" onclick="triggerTemplateUpload()">📂 Load Template</button>
         </div>
+        <input type="file" id="templateFileInput" accept="application/json" style="display:none" onchange="handleTemplateFileChange(event)">
     
 
     <script>
@@ -806,6 +853,43 @@
                 osc.connect(gain).connect(uiAudioContext.destination);
                 osc.start(now);
                 osc.stop(now + duration);
+            } catch {}
+        }
+        function showToast(title, message, ms = 2500) {
+            try {
+                let container = document.getElementById('toastContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'toast-container';
+                    container.id = 'toastContainer';
+                    document.body.appendChild(container);
+                }
+                const t = document.createElement('div');
+                t.className = 'toast';
+                const h = document.createElement('h4');
+                h.textContent = title || 'Notice';
+                const p = document.createElement('p');
+                p.textContent = message || '';
+                const x = document.createElement('button');
+                x.className = 'toast-dismiss';
+                x.textContent = '×';
+                x.title = 'Dismiss';
+                t.appendChild(h);
+                if (message) t.appendChild(p);
+                t.appendChild(x);
+                container.appendChild(t);
+                // Limit stack size
+                const maxToasts = 4;
+                while (container.children.length > maxToasts) {
+                    try { container.children[0].remove(); } catch {}
+                }
+                // Subtle chime
+                playUITone(660, 0.09, 0.03);
+                // Auto dismiss
+                const removeToast = () => { try { t.remove(); } catch {} };
+                const fadeOut = () => { try { t.style.transition = 'opacity 180ms ease'; t.style.opacity = '0'; } catch {} };
+                const autoTimer = setTimeout(() => { fadeOut(); setTimeout(removeToast, 220); }, Math.max(800, ms));
+                x.addEventListener('click', () => { try { clearTimeout(autoTimer); } catch {}; fadeOut(); setTimeout(removeToast, 180); });
             } catch {}
         }
 
@@ -1141,8 +1225,16 @@
                 const v = initialValues[i];
                 input.value = (typeof v === 'string') ? v : String(v);
 
+                // Add per-case Customize button to open wizard
+                const customizeBtn = document.createElement('button');
+                customizeBtn.className = 'action-btn-small';
+                customizeBtn.textContent = 'Customize';
+                customizeBtn.style.cssText = 'align-self:flex-end;';
+                customizeBtn.onclick = () => openCaseWizard(i + 1);
+
                 wrapper.appendChild(label);
                 wrapper.appendChild(input);
+                wrapper.appendChild(customizeBtn);
                 grid.appendChild(wrapper);
             }
         }
@@ -1194,10 +1286,9 @@
         }
 
         function toggleCustomValuesMode() {
-            // Manual values mode is enforced; keep toggle ON
+            // Allow toggling custom values mode freely
             const cb = document.getElementById('useCustomValuesToggle');
-            gameSettings.useCustomValues = true;
-            if (cb) cb.checked = true;
+            gameSettings.useCustomValues = cb ? !!cb.checked : !!gameSettings.useCustomValues;
             reflectCustomModeInUI();
             saveSettings();
             renderCaseValueGrid();
@@ -1211,20 +1302,41 @@
             const zeroMinus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', -1)\"]");
             const zeroPlus = document.querySelector("button.stepper-btn[onclick=\"changeValue('zeroCases', 1)\"]");
 
-            if (cb) { cb.checked = true; cb.disabled = true; }
+            // Do not disable any inputs; always allow editing
+            if (cb) { cb.checked = !!gameSettings.useCustomValues; cb.disabled = false; }
             if (notice) notice.style.display = gameSettings.useCustomValues ? 'block' : 'none';
 
-            if (maxPrizeInput) maxPrizeInput.disabled = !!gameSettings.useCustomValues;
-            if (zeroMinus) zeroMinus.disabled = !!gameSettings.useCustomValues;
-            if (zeroPlus) zeroPlus.disabled = !!gameSettings.useCustomValues;
+            if (maxPrizeInput) maxPrizeInput.disabled = false;
+            if (zeroMinus) zeroMinus.disabled = false;
+            if (zeroPlus) zeroPlus.disabled = false;
 
             const editor = document.getElementById('caseValueEditor');
-            if (editor) editor.style.opacity = gameSettings.useCustomValues ? '1' : '1'; // always visible; toggle just disables conflicting controls
+            if (editor) editor.style.opacity = '1';
         }
 
-        // Save settings to localStorage
+        // Save settings with robust storage fallback
         function saveSettings() {
-            localStorage.setItem('shillOrNoShillSettings', JSON.stringify(gameSettings));
+            const key = 'shillOrNoShillSettings';
+            const payload = JSON.stringify(gameSettings);
+
+            let stored = false;
+            try {
+                localStorage.setItem(key, payload);
+                stored = true;
+                gameSettings.storageMode = 'local';
+            } catch (e) {
+                console.warn('localStorage save failed, falling back to sessionStorage:', e);
+            }
+
+            if (!stored) {
+                try {
+                    sessionStorage.setItem(key, payload);
+                    stored = true;
+                    gameSettings.storageMode = 'session';
+                } catch (e2) {
+                    console.error('sessionStorage save also failed:', e2);
+                }
+            }
 
             // Visual feedback
             const saveBtn = document.querySelector('.btn-save');
@@ -1255,7 +1367,12 @@
 
         // Load settings from localStorage
         function loadSettings() {
-            const saved = localStorage.getItem('shillOrNoShillSettings');
+            const key = 'shillOrNoShillSettings';
+            let saved = null;
+            try { saved = localStorage.getItem(key); } catch (_) {}
+            if (!saved) {
+                try { saved = sessionStorage.getItem(key); } catch (_) {}
+            }
             if (saved) {
                 try {
                     const loadedSettings = JSON.parse(saved);
@@ -1310,7 +1427,12 @@
 
         // Export settings as JSON
         function exportSettings() {
-            const settingsJson = JSON.stringify(gameSettings, null, 2);
+            const settingsForExport = { ...gameSettings };
+            const count = Math.max(10, Math.min(50, settingsForExport.numberOfCases || 25));
+            if (!Array.isArray(settingsForExport.caseOrder) || settingsForExport.caseOrder.length !== count) {
+                settingsForExport.caseOrder = Array.from({ length: count }, (_, i) => i + 1);
+            }
+            const settingsJson = JSON.stringify(settingsForExport, null, 2);
             const blob = new Blob([settingsJson], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
@@ -1321,6 +1443,117 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // ===== RANDOMIZE CASE POSITIONS =====
+        function randomizeCasePositions() {
+            const count = Math.max(10, Math.min(50, gameSettings.numberOfCases || 25));
+            const order = Array.from({ length: count }, (_, i) => i + 1);
+            // Fisher-Yates shuffle
+            for (let i = order.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = order[i];
+                order[i] = order[j];
+                order[j] = tmp;
+            }
+            gameSettings.caseOrder = order;
+            saveSettings();
+            updateSettingsSummary();
+            const btn = document.getElementById('randomizeCasePositionsBtn');
+            if (btn) {
+                const original = btn.textContent;
+                btn.textContent = '✅ Randomized!';
+                setTimeout(() => { btn.textContent = original; }, 1500);
+            }
+        }
+
+        // ===== TEMPLATE SAVE / LOAD =====
+        function saveSettingsAsTemplate() {
+            const name = prompt('Enter a name for this template:', 'My Template');
+            if (!name) return;
+
+            const sanitizedName = String(name).trim().replace(/[^a-z0-9_\- ]/gi, '').replace(/\s+/g, '-');
+            const template = {
+                schemaVersion: '1.0',
+                name: name,
+                savedAt: new Date().toISOString(),
+                settings: gameSettings
+            };
+            try {
+                const json = JSON.stringify(template, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `shill-template-${sanitizedName || 'untitled'}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Failed to save template:', e);
+                alert('Failed to save template. See console for details.');
+            }
+        }
+
+        function triggerTemplateUpload() {
+            const input = document.getElementById('templateFileInput');
+            if (input) input.click();
+        }
+
+        function handleTemplateFileChange(ev) {
+            try {
+                const file = ev.target.files && ev.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const text = reader.result;
+                        const obj = JSON.parse(text);
+                        const incoming = obj?.settings || obj?.gameSettings || obj;
+                        if (!incoming || typeof incoming !== 'object') throw new Error('Invalid template format');
+                        // Merge minimal validated fields; keep current defaults where missing
+                        // Ensure array lengths match numberOfCases for overrides
+                        const count = Math.max(10, Math.min(50, (incoming.numberOfCases ?? gameSettings.numberOfCases) || 25));
+                        if (Array.isArray(incoming.customValuesOverride)) {
+                            incoming.customValuesOverride = incoming.customValuesOverride.slice(0, count);
+                            while (incoming.customValuesOverride.length < count) incoming.customValuesOverride.push('0.00');
+                        }
+                        if (Array.isArray(incoming.caseOrder)) {
+                            // Sanitize case order
+                            const filtered = incoming.caseOrder.filter(n => Number.isInteger(n) && n >= 1 && n <= count);
+                            const missing = [];
+                            for (let n = 1; n <= count; n++) if (!filtered.includes(n)) missing.push(n);
+                            incoming.caseOrder = filtered.concat(missing);
+                        }
+                        gameSettings = { ...gameSettings, ...incoming };
+                        saveSettings();
+                        // Refresh UI to reflect new settings
+                        loadSettings();
+                        updateSettingsSummary();
+                        const modeLabel = gameSettings.useCustomValues ? 'Custom Values: ON' : 'Custom Values: OFF';
+                        const countApplied = Math.max(10, Math.min(50, gameSettings.numberOfCases || 25));
+                        const orderApplied = Array.isArray(gameSettings.caseOrder) ? gameSettings.caseOrder.slice(0, countApplied) : Array.from({ length: countApplied }, (_, i) => i + 1);
+                        const preview = orderApplied.slice(0, 6).join(', ');
+                        const ellipsis = orderApplied.length > 6 ? '…' : '';
+                        showToast('Template Applied', `Cases: ${countApplied} • ${modeLabel} • Order: ${preview}${ellipsis}`);
+                        const btn = document.getElementById('loadTemplateBtn');
+                        if (btn) {
+                            const original = btn.textContent;
+                            btn.textContent = '✅ Template Loaded';
+                            setTimeout(() => { btn.textContent = original; }, 1500);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse template:', e);
+                        alert('Failed to load template: ' + e.message);
+                    } finally {
+                        ev.target.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            } catch (e) {
+                console.error('Template upload error:', e);
+            }
         }
 
         // ===== AUTO-SAVE FUNCTIONALITY =====
@@ -1553,8 +1786,10 @@
                 `;
 
                 const contentTypes = [];
+                if (caseConfig.text) contentTypes.push('📝');
                 if (caseConfig.image) contentTypes.push('📷');
                 if (caseConfig.sound) contentTypes.push('🔊');
+                if (caseConfig.video) contentTypes.push('🎬');
 
                 caseTag.innerHTML = `Case ${caseNumber} ${contentTypes.join('')}`;
                 caseTag.onclick = () => {
@@ -1577,7 +1812,7 @@
 
         function showCaseContextPopup(caseNumber) {
             const conf = gameSettings.customCaseContent[caseNumber];
-            if (!conf || (!conf.image && !conf.sound)) {
+            if (!conf || (!conf.image && !conf.sound && !conf.text && !conf.video)) {
                 alert('No attachments configured for this case.');
                 return;
             }
@@ -1585,21 +1820,48 @@
             const modal = document.getElementById('caseContextModal');
             const imgEl = document.getElementById('modalCaseImage');
             const audioEl = document.getElementById('modalCaseAudio');
+            const textEl = document.getElementById('modalCaseText');
+            const videoEl = document.getElementById('modalCaseVideo');
 
-            if (conf.image) {
-                imgEl.src = conf.image;
-                imgEl.style.display = 'block';
-            } else {
-                imgEl.style.display = 'none';
+            if (imgEl) {
+                if (conf.image) {
+                    imgEl.src = conf.image;
+                    imgEl.style.display = 'block';
+                } else {
+                    imgEl.style.display = 'none';
+                    imgEl.removeAttribute('src');
+                }
             }
 
-            if (conf.sound) {
-                audioEl.src = conf.sound;
-                audioEl.style.display = 'block';
-                // Attempt to autoplay; if blocked, controls are available
-                audioEl.play().catch(() => {});
-            } else {
-                audioEl.style.display = 'none';
+            if (audioEl) {
+                if (conf.sound) {
+                    audioEl.src = conf.sound;
+                    audioEl.style.display = 'block';
+                    audioEl.play().catch(() => {});
+                } else {
+                    audioEl.style.display = 'none';
+                    audioEl.removeAttribute('src');
+                }
+            }
+
+            if (textEl) {
+                if (conf.text) {
+                    textEl.textContent = conf.text;
+                    textEl.style.display = 'block';
+                } else {
+                    textEl.textContent = '';
+                    textEl.style.display = 'none';
+                }
+            }
+
+            if (videoEl) {
+                if (conf.video) {
+                    videoEl.src = conf.video;
+                    videoEl.style.display = 'block';
+                } else {
+                    videoEl.style.display = 'none';
+                    videoEl.removeAttribute('src');
+                }
             }
 
             modal.style.display = 'flex';
@@ -1612,18 +1874,210 @@
             modal.style.display = 'none';
         }
 
+        // ===== CASE WIZARD (Combine Value + Media in Progressive Steps) =====
+        let caseWizardState = {
+            caseNumber: null,
+            stepIndex: 0,
+            value: '0.00',
+            text: '',
+            imageData: null,
+            soundData: null,
+            videoData: null
+        };
+
+        function openCaseWizard(caseNumber) {
+            // Hydrate state from existing settings
+            try {
+                caseWizardState.caseNumber = caseNumber;
+                caseWizardState.stepIndex = 0;
+                const idx = caseNumber - 1;
+                const override = Array.isArray(gameSettings.customValuesOverride) ? gameSettings.customValuesOverride : [];
+                caseWizardState.value = override[idx] ?? '0.00';
+                const conf = gameSettings.customCaseContent[caseNumber] || {};
+                caseWizardState.text = conf.text || '';
+                caseWizardState.imageData = conf.image || null;
+                caseWizardState.soundData = conf.sound || null;
+                caseWizardState.videoData = conf.video || null;
+            } catch {}
+
+            // Update UI fields
+            document.getElementById('cwValueInput').value = caseWizardState.value;
+            document.getElementById('cwTextInput').value = caseWizardState.text;
+            // Image preview
+            const img = document.getElementById('cwImagePreview');
+            if (caseWizardState.imageData) { img.src = caseWizardState.imageData; img.style.display = 'block'; } else { img.style.display = 'none'; }
+            // Sound preview
+            const aud = document.getElementById('cwSoundPreview');
+            if (caseWizardState.soundData) { aud.src = caseWizardState.soundData; aud.style.display = 'block'; } else { aud.style.display = 'none'; }
+            // Video preview
+            const vid = document.getElementById('cwVideoPreview');
+            if (caseWizardState.videoData) { vid.src = caseWizardState.videoData; vid.style.display = 'block'; } else { vid.style.display = 'none'; }
+
+            updateWizardStepUI();
+            document.getElementById('caseWizardModal').style.display = 'flex';
+        }
+
+        function closeCaseWizard() {
+            const aud = document.getElementById('cwSoundPreview');
+            if (aud) aud.pause();
+            const vid = document.getElementById('cwVideoPreview');
+            if (vid) vid.pause();
+            document.getElementById('caseWizardModal').style.display = 'none';
+        }
+
+        function updateWizardStepUI() {
+            const steps = document.querySelectorAll('.cw-step');
+            steps.forEach((el, idx) => {
+                el.style.display = (idx === caseWizardState.stepIndex) ? 'block' : 'none';
+            });
+            const indicators = document.querySelectorAll('.cw-step-ind');
+            indicators.forEach((el, idx) => {
+                el.style.opacity = (idx <= caseWizardState.stepIndex) ? '1' : '0.4';
+            });
+            document.getElementById('cwPrevBtn').disabled = caseWizardState.stepIndex === 0;
+            document.getElementById('cwNextBtn').style.display = caseWizardState.stepIndex < 4 ? 'inline-flex' : 'none';
+            document.getElementById('cwSaveBtn').style.display = caseWizardState.stepIndex === 4 ? 'inline-flex' : 'none';
+        }
+
+        function cwPrevStep() {
+            if (caseWizardState.stepIndex > 0) {
+                caseWizardState.stepIndex--;
+                updateWizardStepUI();
+            }
+        }
+
+        function cwNextStep() {
+            if (caseWizardState.stepIndex < 4) {
+                caseWizardState.stepIndex++;
+                updateWizardStepUI();
+            }
+        }
+
+        // Inputs handlers
+        function cwOnValueChange(el) {
+            caseWizardState.value = (el.value || '').trim();
+        }
+        function cwOnTextChange(el) {
+            caseWizardState.text = (el.value || '').trim();
+        }
+        function cwOnImageSelected(el) {
+            const f = el.files && el.files[0];
+            if (!f) { caseWizardState.imageData = null; document.getElementById('cwImagePreview').style.display = 'none'; return; }
+            const reader = new FileReader(); reader.onload = e => { caseWizardState.imageData = e.target.result; const img = document.getElementById('cwImagePreview'); img.src = caseWizardState.imageData; img.style.display = 'block'; }; reader.readAsDataURL(f);
+        }
+        function cwOnSoundSelected(el) {
+            const f = el.files && el.files[0];
+            if (!f) { caseWizardState.soundData = null; const a = document.getElementById('cwSoundPreview'); a.style.display = 'none'; a.src = ''; return; }
+            const reader = new FileReader(); reader.onload = e => { caseWizardState.soundData = e.target.result; const a = document.getElementById('cwSoundPreview'); a.src = caseWizardState.soundData; a.style.display = 'block'; }; reader.readAsDataURL(f);
+        }
+        function cwOnVideoSelected(el) {
+            const f = el.files && el.files[0];
+            if (!f) { caseWizardState.videoData = null; const v = document.getElementById('cwVideoPreview'); v.style.display = 'none'; v.src = ''; return; }
+            const reader = new FileReader(); reader.onload = e => { caseWizardState.videoData = e.target.result; const v = document.getElementById('cwVideoPreview'); v.src = caseWizardState.videoData; v.style.display = 'block'; }; reader.readAsDataURL(f);
+        }
+
+        function cwSaveApply() {
+            const n = caseWizardState.caseNumber;
+            const idx = n - 1;
+            // Persist value to customValuesOverride
+            const count = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+            if (!Array.isArray(gameSettings.customValuesOverride)) gameSettings.customValuesOverride = Array.from({ length: count }, () => '0.00');
+            // Extend array if needed
+            while (gameSettings.customValuesOverride.length < count) gameSettings.customValuesOverride.push('0.00');
+            gameSettings.customValuesOverride[idx] = caseWizardState.value || '0.00';
+            gameSettings.useCustomValues = true;
+
+            // Persist media/text to customCaseContent
+            const conf = gameSettings.customCaseContent[n] || {};
+            conf.text = caseWizardState.text || '';
+            conf.image = caseWizardState.imageData || null;
+            conf.sound = caseWizardState.soundData || null;
+            conf.video = caseWizardState.videoData || null;
+            // Remove empty configs
+            if (conf.text || conf.image || conf.sound || conf.video) {
+                gameSettings.customCaseContent[n] = conf;
+            } else {
+                delete gameSettings.customCaseContent[n];
+            }
+
+            saveSettings();
+            renderCaseValueGrid();
+            updateConfiguredCasesList();
+            reflectCustomModeInUI();
+
+            // Feedback
+            const saveBtn = document.getElementById('cwSaveBtn');
+            const orig = saveBtn.textContent;
+            saveBtn.textContent = '✅ SAVED';
+            setTimeout(() => { saveBtn.textContent = orig; closeCaseWizard(); }, 900);
+        }
+
         // Initialize when page loads
         window.onload = initializePage;
     </script>
-    <!-- Context Modal for Case Media Attachments -->
-    <div id="caseContextModal" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: none; align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: #111; border: 1px solid rgba(0,255,255,0.5); border-radius: 12px; padding: 16px; width: min(640px, 92vw); color: #00ffff; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-            <button onclick="closeCaseContextModal()" style="position: absolute; top: 8px; right: 8px; background: transparent; border: 1px solid rgba(0,255,255,0.5); color: #00ffff; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✖ Close</button>
-            <div id="modalImageContainer" style="text-align: center; margin-bottom: 12px;">
-                <img id="modalCaseImage" alt="Case Attachment" style="max-width: 100%; max-height: 60vh; border-radius: 8px; display: none;" />
+    <!-- Case Wizard Modal -->
+    <div id="caseWizardModal" class="lg-overlay" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1200;">
+        <div class="lg-content" style="border-radius: 14px; padding: 16px; width: min(800px, 95vw); position: relative;">
+            <button onclick="closeCaseWizard()" style="position: absolute; top: 8px; right: 8px; background: transparent; border: 1px solid rgba(0,255,255,0.5); color: #00ffff; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✖ Close</button>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <div class="cw-step-ind" style="flex:1; height:6px; background: rgba(0,255,255,0.25); border-radius:4px; opacity:1;"></div>
+                <div class="cw-step-ind" style="flex:1; height:6px; background: rgba(0,255,255,0.25); border-radius:4px; opacity:0.4;"></div>
+                <div class="cw-step-ind" style="flex:1; height:6px; background: rgba(0,255,255,0.25); border-radius:4px; opacity:0.4;"></div>
+                <div class="cw-step-ind" style="flex:1; height:6px; background: rgba(0,255,255,0.25); border-radius:4px; opacity:0.4;"></div>
+                <div class="cw-step-ind" style="flex:1; height:6px; background: rgba(0,255,255,0.25); border-radius:4px; opacity:0.4;"></div>
             </div>
-            <audio id="modalCaseAudio" controls style="width: 100%; display: none;"></audio>
+            <div style="display:block;">
+                <!-- Step 1: Value -->
+                <div class="cw-step" style="display:block;">
+                    <label style="display:block; margin-bottom:6px;">Case Value (USD)</label>
+                    <input id="cwValueInput" type="text" class="setting-input" placeholder="e.g., 1000 or 0.01" oninput="cwOnValueChange(this)">
+                    <div style="font-size:0.85rem; color:#b2ffff; margin-top:6px;">This amount will be stored in Custom Values for the selected case.</div>
+                </div>
+                <!-- Step 2: Text -->
+                <div class="cw-step" style="display:none;">
+                    <label style="display:block; margin-bottom:6px;">Case Text / Notes</label>
+                    <textarea id="cwTextInput" class="setting-input" style="min-height:120px;" placeholder="Any message or description shown when this case is opened." oninput="cwOnTextChange(this)"></textarea>
+                </div>
+                <!-- Step 3: Image -->
+                <div class="cw-step" style="display:none;">
+                    <label style="display:block; margin-bottom:6px;">Attach Image (png/jpg/gif)</label>
+                    <input type="file" accept="image/*" class="setting-input" onchange="cwOnImageSelected(this)">
+                    <div style="margin-top:8px; text-align:center;">
+                        <img id="cwImagePreview" alt="Image Preview" style="max-width:100%; max-height:40vh; border-radius:8px; display:none;" />
+                    </div>
+                </div>
+                <!-- Step 4: Sound -->
+                <div class="cw-step" style="display:none;">
+                    <label style="display:block; margin-bottom:6px;">Attach Sound (mp3/wav)</label>
+                    <input type="file" accept="audio/*" class="setting-input" onchange="cwOnSoundSelected(this)">
+                    <audio id="cwSoundPreview" controls style="width:100%; display:none; margin-top:8px;"></audio>
+                </div>
+                <!-- Step 5: Video -->
+                <div class="cw-step" style="display:none;">
+                    <label style="display:block; margin-bottom:6px;">Attach Video (mp4/webm)</label>
+                    <input type="file" accept="video/*" class="setting-input" onchange="cwOnVideoSelected(this)">
+                    <video id="cwVideoPreview" controls style="width:100%; display:none; margin-top:8px;"></video>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+                <button id="cwPrevBtn" class="action-btn-small secondary" onclick="cwPrevStep()">Back</button>
+                <button id="cwNextBtn" class="action-btn-small" onclick="cwNextStep()">Next</button>
+                <button id="cwSaveBtn" class="action-btn btn-save" style="display:none;" onclick="cwSaveApply()">Save & Apply</button>
+            </div>
         </div>
     </div>
+    <!-- Context Modal for Case Media Attachments -->
+    <div id="caseContextModal" class="lg-overlay" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="lg-content" style="border-radius: 12px; padding: 16px; width: min(720px, 92vw); position: relative;">
+            <button onclick="closeCaseContextModal()" style="position: absolute; top: 8px; right: 8px; background: transparent; border: 1px solid rgba(0,255,255,0.5); color: #00ffff; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✖ Close</button>
+            <div id="modalText" style="display:none; margin-bottom: 10px; color:#b2ffff; font-size: 0.95rem; line-height:1.4;" ></div>
+            <div id="modalImageContainer" style="text-align: center; margin-bottom: 12px;">
+                <img id="modalCaseImage" alt="Case Attachment" style="max-width: 100%; max-height: 50vh; border-radius: 8px; display: none;" />
+            </div>
+            <video id="modalCaseVideo" controls style="width: 100%; display: none; margin-top:8px; border-radius:8px;"></video>
+            <audio id="modalCaseAudio" controls style="width: 100%; display: none; margin-top:8px;"></audio>
+        </div>
+    </div>
+    <script src="assets/js/liquid-glass.js"></script>
 </body>
 </html>

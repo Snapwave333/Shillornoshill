@@ -1,0 +1,106 @@
+/* Liquid Glass Theme — Web (Game Master Control Center + Customize Case wizard) */
+:root {
+  --lg-accent: #21CBF3;
+  --lg-accent-2: #ff00ff;
+  --lg-text: #e5e7eb;
+  --lg-text-dim: #9ca3af;
+  --lg-bg-0: #0f1117;
+  --lg-glass: rgba(20, 20, 30, 0.70);
+  --lg-glass-strong: rgba(20, 20, 30, 0.80);
+  --lg-border: rgba(255,255,255,0.08);
+  --lg-shadow-outer: 0 20px 60px rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.35);
+}
+
+body.liquid-glass-theme {
+  background: radial-gradient(1200px 600px at 20% 10%, rgba(33, 0, 66, 0.25), transparent),
+              radial-gradient(900px 600px at 80% 80%, rgba(0, 50, 120, 0.25), transparent),
+              linear-gradient(180deg, #0c0c12 0%, var(--lg-bg-0) 100%);
+  color: var(--lg-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Generic glass surface wrapper */
+.liquid-glass-theme .lg-glass,
+.liquid-glass-theme .preview-section,
+.liquid-glass-theme .setting-group,
+.liquid-glass-theme .settings-summary {
+  background: var(--lg-glass);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid var(--lg-border);
+  box-shadow: var(--lg-shadow-outer);
+  border-radius: 16px;
+}
+
+.liquid-glass-theme .header {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+  border-bottom: 1px solid var(--lg-border);
+  backdrop-filter: blur(12px);
+}
+
+/* Buttons */
+.liquid-glass-theme .action-btn,
+.liquid-glass-theme .action-btn-small,
+.liquid-glass-theme .stepper-btn,
+.liquid-glass-theme .btn {
+  background: linear-gradient(45deg, var(--lg-accent), var(--lg-accent-2));
+  color: #0f1218;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 30px rgba(33,203,243,0.25);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  will-change: transform;
+}
+.liquid-glass-theme .action-btn:hover,
+.liquid-glass-theme .action-btn-small:hover,
+.liquid-glass-theme .stepper-btn:hover,
+.liquid-glass-theme .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* Inputs */
+.liquid-glass-theme .setting-input,
+.liquid-glass-theme input[type="text"],
+.liquid-glass-theme input[type="number"],
+.liquid-glass-theme select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--lg-border);
+  color: var(--lg-text);
+  border-radius: 12px;
+}
+
+/* Case Wizard and Context Modal */
+#caseWizardModal.lg-overlay,
+#caseContextModal.lg-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+#caseWizardModal .lg-content,
+#caseContextModal .lg-content {
+  background: var(--lg-glass) !important;
+  backdrop-filter: blur(16px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+  border: 1px solid var(--lg-border) !important;
+  box-shadow: var(--lg-shadow-outer) !important;
+  color: var(--lg-text) !important;
+}
+
+.liquid-glass-theme .configured-case-tag {
+  background: rgba(0, 255, 255, 0.15) !important;
+  border: 1px solid rgba(0, 255, 255, 0.35) !important;
+  color: #b2ffff !important;
+}
+
+/* Micro motion on hover */
+.liquid-glass-theme .preview-section:hover,
+.liquid-glass-theme .setting-group:hover,
+#caseWizardModal .lg-content:hover,
+#caseContextModal .lg-content:hover {
+  box-shadow: 0 24px 80px rgba(0,0,0,0.50), 0 8px 28px rgba(0,0,0,0.40);
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-theme .action-btn,
+  .liquid-glass-theme .action-btn-small,
+  .liquid-glass-theme .stepper-btn,
+  .liquid-glass-theme .btn { transition: none; }
+}

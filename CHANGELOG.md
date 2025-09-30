@@ -33,4 +33,6 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
 
 - Window preferences
   - Added user-configurable Fullscreen and Resizable options in the View menu.
-  - Preferences persist to userData and are applied on launch.
+  - Preferences persist to userData and are applied on launch.## v1.4.0 — Stable
+- See RELEASE_NOTES.md for detailed changes.
+

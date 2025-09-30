@@ -1,6 +1,6 @@
 {
   "name": "shill-or-no-shill-app",
-  "version": "1.1.2",
+  "version": "1.4.0",
   "description": "Shill Or No Shill packaged as a Windows desktop app",
   "main": "electron/main.js",
   "author": "",
@@ -9,6 +9,8 @@
     "start": "electron .",
     "build": "electron-builder --win",
     "release": "electron-builder --win --publish always",
+    "tag": "git tag v$npm_package_version && git push origin v$npm_package_version",
+    "notes": "node scripts/generate-release-notes.js",
     "postinstall": "echo Postinstall completed",
     "icons": "node scripts/generate-icon.js",
     "brand-icon": "node scripts/build-branding-icon.js",

@@ -10,7 +10,9 @@
     "build": "electron-builder --win",
     "release": "electron-builder --win --publish always",
     "postinstall": "echo Postinstall completed",
-    "icons": "node scripts/generate-icon.js"
+    "icons": "node scripts/generate-icon.js",
+    "brand-icon": "node scripts/build-branding-icon.js",
+    "rebrand": "node scripts/build-branding-icon.js && node scripts/generate-icon.js"
   },
   "dependencies": {
     "electron-updater": "^6.3.11",

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, Notification } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, Notification, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
@@ -224,11 +224,82 @@ function setupAutoUpdater() {
   // Only run auto-updater in packaged apps; dev runs do not have update config
   if (!app.isPackaged) return;
   // Download updates automatically and notify
-  autoUpdater.autoDownload = true;
+  // Switch to opt-in flow: show prompt with release notes, then download
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
   autoUpdater.logger = log;
   log.transports.file.level = 'info';
+
+  // Helper to normalize release notes into text lines
+  function normalizeReleaseNotes(releaseNotes) {
+    try {
+      if (!releaseNotes) return [];
+      // electron-updater may provide string or array of objects
+      let text = '';
+      if (Array.isArray(releaseNotes)) {
+        text = releaseNotes.map(r => (typeof r === 'string' ? r : (r?.note || r?.body || ''))).join('\n');
+      } else if (typeof releaseNotes === 'string') {
+        text = releaseNotes;
+      } else if (typeof releaseNotes === 'object') {
+        text = releaseNotes.note || releaseNotes.body || '';
+      }
+      // Strip markdown headers, keep bullets
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const bullets = lines.filter(l => l.startsWith('- '));
+      if (bullets.length) return bullets.slice(0, 8);
+      // Fallback: return first few non-empty lines
+      return lines.slice(0, 8);
+    } catch { return []; }
+  }
+
+  // Try to read owner/repo from package.json build.publish
+  function getPublishRepo() {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+      const pub = pkg.build && Array.isArray(pkg.build.publish) ? pkg.build.publish[0] : null;
+      const owner = pub?.owner || 'Snapwave333';
+      const repo = pub?.repo || 'Shillornoshill';
+      return { owner, repo };
+    } catch {
+      return { owner: 'Snapwave333', repo: 'Shillornoshill' };
+    }
+  }
+
+  // Fetch release notes body from GitHub Releases by tag (v{version})
+  async function fetchGitHubReleaseNotes(version) {
+    const { owner, repo } = getPublishRepo();
+    const url = `https://api.github.com/repos/${owner}/${repo}/releases/tags/v${version}`;
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'ShillOrNoShill-Updater' } });
+      if (!res.ok) return null;
+      const json = await res.json();
+      const body = (json && (json.body || json.name || '')) || '';
+      const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const bullets = lines.filter(l => l.startsWith('- '));
+      return (bullets.length ? bullets : lines).slice(0, 8);
+    } catch {
+      return null;
+    }
+  }
+
+  // Fallback to local RELEASE_NOTES.md for the section matching version
+  function readLocalReleaseNotes(version) {
+    try {
+      const p = path.join(__dirname, '..', 'RELEASE_NOTES.md');
+      if (!fs.existsSync(p)) return null;
+      const body = fs.readFileSync(p, 'utf8');
+      const re = new RegExp(`^## v${version}[^\n]*\n([\s\S]*?)(?:\n## v|$)`, 'm');
+      const m = body.match(re);
+      if (!m) return null;
+      const section = m[1] || '';
+      const lines = section.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const bullets = lines.filter(l => l.startsWith('- '));
+      return (bullets.length ? bullets : lines).slice(0, 8);
+    } catch {
+      return null;
+    }
+  }
 
   autoUpdater.on('checking-for-update', () => {
     log.info('Updater: checking for updates');
@@ -236,10 +307,46 @@ function setupAutoUpdater() {
     n.show();
   });
 
-  autoUpdater.on('update-available', (info) => {
+  autoUpdater.on('update-available', async (info) => {
     log.info('Updater: update available', info);
-    const n = new Notification({ title: 'Updater', body: `Update available: v${info.version}. Downloading...` });
-    n.show();
+    let notes = normalizeReleaseNotes(info.releaseNotes);
+    if (!notes || notes.length === 0) {
+      notes = readLocalReleaseNotes(info.version) || (await fetchGitHubReleaseNotes(info.version)) || [];
+    }
+    const message = `A new version v${info.version} is available.`;
+    const detail = notes.length ? `What's new:\n\n${notes.join('\n')}` : 'Release notes are available on GitHub Releases.';
+    // Show a concise notification summary as well
+    try {
+      const short = notes.slice(0, 3).map(n => n.replace(/^\-\s*/, '')).join(' • ');
+      const n = new Notification({ title: 'Update Available', body: short ? `v${info.version}: ${short}` : `v${info.version} is available` });
+      n.show();
+    } catch {}
+    try {
+      const result = await dialog.showMessageBox({
+        type: 'info',
+        buttons: ['Update Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Available',
+        message,
+        detail,
+        normalizeAccessKeys: true,
+      });
+      if (result.response === 0) {
+        log.info('Updater: user accepted update, starting download');
+        const n = new Notification({ title: 'Updater', body: `Downloading v${info.version}...` });
+        n.show();
+        try { await autoUpdater.downloadUpdate(); } catch (e) { log.error('Updater: downloadUpdate failed', e); }
+      } else {
+        log.info('Updater: user deferred update');
+        const n = new Notification({ title: 'Updater', body: 'Update dismissed. You can update later from the menu.' });
+        n.show();
+      }
+    } catch (e) {
+      log.error('Updater: prompt failed', e);
+      const n = new Notification({ title: 'Updater', body: `Update v${info.version} available.` });
+      n.show();
+    }
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -256,14 +363,35 @@ function setupAutoUpdater() {
     }
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', async (info) => {
     log.info('Updater: update downloaded', info);
-    const n = new Notification({ title: 'Updater', body: 'Update downloaded. The app will restart to install.' });
-    n.show();
-    // Quit and install (will restart the app)
-    setTimeout(() => {
-      try { autoUpdater.quitAndInstall(); } catch (e) { log.error('Updater: quitAndInstall failed', e); }
-    }, 1000);
+    try {
+      const result = await dialog.showMessageBox({
+        type: 'question',
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Ready',
+        message: 'Update downloaded. Restart to install?',
+        detail: `v${info.version} will be installed. Unsaved work will be lost.`,
+        normalizeAccessKeys: true,
+      });
+      if (result.response === 0) {
+        const n = new Notification({ title: 'Updater', body: 'Restarting to install update...' });
+        n.show();
+        try { autoUpdater.quitAndInstall(); } catch (e) { log.error('Updater: quitAndInstall failed', e); }
+      } else {
+        const n = new Notification({ title: 'Updater', body: 'Update deferred. It will install on app quit.' });
+        n.show();
+      }
+    } catch (e) {
+      log.error('Updater: restart prompt failed', e);
+      const n = new Notification({ title: 'Updater', body: 'Update downloaded. The app will restart to install.' });
+      n.show();
+      setTimeout(() => {
+        try { autoUpdater.quitAndInstall(); } catch (err) { log.error('Updater: quitAndInstall failed', err); }
+      }, 1000);
+    }
   });
 
   autoUpdater.on('error', (err) => {
@@ -272,10 +400,10 @@ function setupAutoUpdater() {
     n.show();
   });
 
-  // Initial check on startup
+  // Initial check on startup with explicit prompt flow
   try {
-    log.info('Updater: initial checkForUpdatesAndNotify');
-    autoUpdater.checkForUpdatesAndNotify();
+    log.info('Updater: initial checkForUpdates');
+    autoUpdater.checkForUpdates();
   } catch (e) {
     log.error('Updater: initial check failed', e);
     const n = new Notification({ title: 'Updater Error', body: String(e) });

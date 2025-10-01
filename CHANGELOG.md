@@ -47,3 +47,10 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
   - Version bump to 1.4.1.
   - Updated release notes.
 
+## 1.4.2 (Stable)
+
+- Updater UX
+  - Launch-time update check with user prompt and release notes.
+  - Opt-in download; restart prompt after download.
+  - Fallback release notes from local file or GitHub.
+

@@ -1,5 +1,18 @@
 # Shill Or No Shill — Release Notes
 
+## v1.4.2 — Stable
+Release Date: October 1, 2025
+
+### Updater UX
+- App checks for updates on launch and prompts with release notes.
+- Opt-in download flow: choose Update Now or Later.
+- Restart prompt after download with option to defer.
+- Release notes pulled from embedded data, local file, or GitHub when available.
+
+### Notes
+- Requires packaged build; updater disabled in dev.
+- Uses `electron-updater` with `autoDownload=false` for user control.
+
 ## v1.4.1 — Stable
 Release Date: October 1, 2025
 

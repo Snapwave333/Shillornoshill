@@ -5,6 +5,10 @@
 A lightweight, offline-friendly game inspired by Deal or No Deal. Configure prizes, play rounds, and experiment with strategies. Now featuring a Max Prize Amount model: prizes scale from $0 up to your configured maximum, with $0 traps always shown as $0.
 
 ## Highlights
+- What’s New in v1.4.3
+  - Settings: Configuration Preview moved under action buttons for faster validation.
+  - Prize Configuration spans full width for unified editing of key inputs.
+  - Background fills full viewport for consistent theming.
 - Max Prize Amount setting replaces legacy "Prize Scale Multiplier".
 - Prizes auto-scale from $0 to your chosen maximum; zero traps are forced to $0.
 - Settings persist locally via `localStorage` and can be overridden per game.

@@ -54,3 +54,14 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
   - Opt-in download; restart prompt after download.
   - Fallback release notes from local file or GitHub.
 
+## 1.4.3 (Stable)
+
+- Settings Layout
+  - Configuration Preview moved directly under action buttons.
+  - Prize Configuration panel now spans full grid width.
+  - Full-viewport page background for consistent theming.
+
+- Release
+  - Version bump to 1.4.3.
+  - Updated release notes and README.
+

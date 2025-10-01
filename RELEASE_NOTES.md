@@ -1,5 +1,16 @@
 # Shill Or No Shill — Release Notes
 
+## v1.4.3 — Stable
+Release Date: October 1, 2025
+
+### Layout & UX
+- Settings: Configuration Preview moved directly under action buttons.
+- Prize Configuration: Panel spans full grid width for unified editing.
+- Background: Page background fills the entire viewport (`min-height: 100vh`).
+
+### Notes
+- No functional logic changed; UX-only improvements.
+
 ## v1.4.2 — Stable
 Release Date: October 1, 2025
 

@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shill or No Shill - Game Master Settings</title>
-    <style>
+<style>
+        html {
+            background-color: #0a0a0a;
+            min-height: 100vh;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -106,6 +110,11 @@
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 30px;
             margin-bottom: 40px;
+        }
+
+        /* Expand Prize Configuration to full width */
+        .settings-grid .settings-panel.prize-config {
+            grid-column: 1 / -1;
         }
 
         .settings-panel {
@@ -395,8 +404,9 @@
             border: 1px solid rgba(255, 255, 0, 0.3);
             border-radius: 20px;
             padding: 30px;
-            margin-top: 40px;
+            margin-top: 8px;
             text-align: center;
+            grid-column: 1 / -1;
         }
 
         .preview-title {
@@ -424,7 +434,7 @@
             gap: 12px;
             justify-content: center;
             margin-top: 40px;
-            padding-bottom: 40px;
+            padding-bottom: 16px;
         }
 
         .action-btn {
@@ -611,7 +621,7 @@
                 </div>
             </div>
             <!-- Prize Configuration Panel -->
-            <div class="settings-panel">
+            <div class="settings-panel prize-config">
                 <h2 class="panel-title">Prize Configuration</h2>
 
                 <!-- Max Prize Amount (replaces Prize Scale Multiplier) -->

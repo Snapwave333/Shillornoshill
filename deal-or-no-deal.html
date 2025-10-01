@@ -11,6 +11,8 @@
             box-sizing: border-box;
         }
 
+        :root { --vh: 1vh; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0c1020 url('assets/images/backgrounds/game-gradient.svg') center/cover fixed no-repeat;
@@ -22,10 +24,12 @@
         .container {
             display: grid;
             grid-template-columns: 1fr 2fr 1fr;
-            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100 - 36px);
             gap: 10px;
             padding: 10px;
         }
+
+        .container > * { min-height: 0; }
 
         /* Left Column - Monetary Values */
         .values-panel {
@@ -85,11 +89,31 @@
             border: 2px solid #ffd700;
             display: flex;
             flex-direction: column;
+            max-height: 100%;
+            overflow: auto;
         }
 
         .game-title {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            font-family: 'Segoe UI', 'Trebuchet MS', 'Georgia', serif;
+            font-weight: 800;
+            letter-spacing: 1px;
+            line-height: 90px; /* vertically center text in fixed height */
+            font-size: 48px; /* balanced to fit within 500px width */
+            /* Gold gradient text */
+            background: linear-gradient(180deg, #FFD700 0%, #FFC107 35%, #FFB300 55%, rgba(255,255,255,0.6) 80%, #FFD700 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            padding: 0;
+            white-space: nowrap; /* keep title on a single line */
+            width: 500px; /* requested fixed width */
+            height: 90px; /* requested fixed height */
+            margin-left: auto; /* center horizontally */
+            margin-right: auto; /* center horizontally */
+            position: relative; /* allow sparkles to overlay within bounds */
         }
 
         .game-title img {
@@ -98,6 +122,43 @@
             display: block;
             margin: 0 auto;
             filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.7));
+        }
+
+        /* Sparkle effect for the title */
+        .game-title .sparkle {
+            position: absolute;
+            pointer-events: none;
+            width: var(--s, 12px);
+            height: var(--s, 12px);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.6) rotate(var(--rot, 0deg));
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0%, rgba(255,215,0,0.85) 35%, rgba(255,180,0,0.6) 55%, rgba(255,215,0,0.0) 70%);
+            filter: drop-shadow(0 0 6px rgba(255,215,0,0.85));
+            opacity: 0;
+            animation: sparklePop var(--dur, 1200ms) ease-out forwards;
+        }
+        .game-title .sparkle::before,
+        .game-title .sparkle::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 2px;
+            height: calc(var(--s, 12px) * 1.8);
+            transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0));
+            border-radius: 2px;
+            opacity: 0.9;
+        }
+        .game-title .sparkle::after {
+            transform: translate(-50%, -50%) rotate(calc(var(--rot, 0deg) + 90deg));
+        }
+        @keyframes sparklePop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(var(--rot, 0deg)); }
+            35% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(var(--rot, 0deg)); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(var(--rot, 0deg)); }
         }
 
         .cases-grid {
@@ -291,6 +352,34 @@
             border: 2px solid #ffd700;
             display: flex;
             flex-direction: column;
+            max-height: 100%;
+            overflow: auto;
+        }
+
+        /* Top-aligned controller actions under HOST CONTROLLER title */
+        .controller-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 8px; /* slight space under title */
+            padding-top: 0;
+            padding-bottom: 10px; /* requested padding beneath buttons */
+            border-top: none;
+        }
+        .controller-actions .control-btn {
+            width: 200px;
+            height: 20px;
+            padding: 0 8px;
+            font-size: 12px;
+            line-height: 20px;
+        }
+        .controller-actions #newGameBtn {
+            margin-left: 20px; /* 20px space before New Game button */
+        }
+        .controller-actions .control-btn .icon {
+            width: 14px;
+            height: 14px;
         }
 
         .controller-title {
@@ -430,7 +519,7 @@
         @media (max-width: 1200px) {
             .container {
                 grid-template-columns: 1fr;
-                height: auto;
+                height: calc(var(--vh, 1vh) * 100 - 36px);
                 padding: 5px;
             }
 
@@ -542,6 +631,19 @@
         bind('btn-close', () => wc?.close?.());
     })();
     </script>
+    <script>
+    // Sync CSS --vh with actual viewport height to avoid OS UI overlaps
+    (function(){
+        function setVH(){
+            var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+            var vh = h * 0.01;
+            document.documentElement.style.setProperty('--vh', vh + 'px');
+        }
+        setVH();
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', setVH);
+    })();
+    </script>
     <div class="container">
         <!-- Left Column - Monetary Values -->
         <div class="values-panel">
@@ -588,6 +690,8 @@
                 </button>
                 <!-- Manual Banker offers only - no suggestions needed -->
             </div>
+            <!-- Decision buttons slot: shown only when relevant -->
+            <div id="decisionButtonsSlot" class="decision-buttons-slot" style="display:none; padding:20px 0 40px 0;"></div>
 
             <div class="last-value">
                 <div class="last-value-text" id="lastValue">Last Opened: None</div>
@@ -627,6 +731,90 @@
             0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750,
             1000, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000
         ];
+
+        // Gold sparkle effect for the title
+        function initTitleSparkles() {
+            const el = document.querySelector('.game-title');
+            if (!el) return;
+            const spawnSparkle = () => {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                const size = Math.round(Math.random() * 10 + 8); // 8-18px
+                const dur = Math.round(Math.random() * 800 + 900); // 900-1700ms
+                const rot = Math.floor(Math.random() * 360);
+                const leftPct = Math.random() * 100; // between 0%-100%
+                const topJitter = (Math.random() * 26) - 13; // -13% to +13% around middle line
+                s.style.setProperty('--s', `${size}px`);
+                s.style.setProperty('--dur', `${dur}ms`);
+                s.style.setProperty('--rot', `${rot}deg`);
+                s.style.left = `${leftPct}%`;
+                s.style.top = `${50 + topJitter}%`;
+                el.appendChild(s);
+                s.addEventListener('animationend', () => s.remove());
+                setTimeout(() => s.remove(), dur + 500);
+            };
+            // Periodic sparkles
+            const timer = setInterval(() => {
+                const count = Math.random() < 0.6 ? 1 : 2;
+                for (let i = 0; i < count; i++) spawnSparkle();
+            }, 1200);
+            // Boost on hover
+            el.addEventListener('mouseenter', () => {
+                for (let i = 0; i < 4; i++) setTimeout(spawnSparkle, i * 120);
+            });
+            // Clean up on unload
+            window.addEventListener('beforeunload', () => clearInterval(timer));
+        }
+
+        // Layout enhancements: move directions beneath title, and controls to controller bottom-right
+        function setupUILayoutEnhancements() {
+            try {
+                const gamePanel = document.querySelector('.game-panel');
+                const titleEl = gamePanel?.querySelector('.game-title');
+                const statusEl = gamePanel?.querySelector('.game-status');
+                if (gamePanel && titleEl && statusEl) {
+                    // Place status directly after title
+                    if (statusEl.previousElementSibling !== titleEl) {
+                        gamePanel.insertBefore(statusEl, titleEl.nextSibling);
+                    }
+                    statusEl.style.margin = '-12px auto 16px auto';
+                    statusEl.style.maxWidth = '800px';
+                }
+
+                const controller = document.querySelector('.controller-panel');
+                if (controller) {
+                    let actions = controller.querySelector('.controller-actions');
+                    const controllerTitle = controller.querySelector('.controller-title');
+                    if (!actions) {
+                        actions = document.createElement('div');
+                        actions.className = 'controller-actions';
+                        if (controllerTitle) {
+                            controller.insertBefore(actions, controllerTitle.nextSibling);
+                        } else {
+                            controller.appendChild(actions);
+                        }
+                    } else if (controllerTitle && actions.previousElementSibling !== controllerTitle) {
+                        controller.insertBefore(actions, controllerTitle.nextSibling);
+                    }
+
+                    const newGameBtn = document.getElementById('newGameBtn');
+                    const settingsBtn = document.getElementById('settingsBtn');
+                    const controlsContainer = document.querySelector('.game-controls');
+                    if (controlsContainer) {
+                        controlsContainer.style.display = 'none';
+                    }
+                    [newGameBtn, settingsBtn].forEach(btn => {
+                        if (btn && btn.parentElement !== actions) {
+                            actions.appendChild(btn);
+                            btn.style.minWidth = '140px';
+                            btn.style.padding = '12px 16px';
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('setupUILayoutEnhancements encountered an issue:', e);
+            }
+        }
 
         // Game Master Settings (loaded from localStorage)
         let gameMasterSettings = null;
@@ -772,6 +960,21 @@
             // Update UI
             updateValuesGrid();
             updateCasesGrid();
+
+            // Ensure decision buttons exist and start disabled/visible
+            try {
+                const slot = ensureDecisionButtonsSlot();
+                hideDecisionButtons();
+                if (slot) {
+                    slot.style.display = 'block';
+                    slot.style.visibility = 'visible';
+                }
+            } catch (e) {
+                console.warn('Failed to initialize decision buttons slot:', e);
+            }
+
+            // Apply UI layout enhancements after initial render
+            setupUILayoutEnhancements();
         }
 
         // Update the values grid (descending order, accurate duplicate handling)
@@ -878,11 +1081,11 @@
                 return;
             }
 
-            // Check if decision buttons are currently showing (player needs to make a decision)
-            const gameStatus = document.getElementById('gameStatus');
-            const decisionButtons = gameStatus.querySelector('.decision-buttons');
-            if (decisionButtons) {
-                // Player needs to make a decision first - do nothing
+            // If decision controls are active (enabled), block case opening until decision is made
+            const slot = document.getElementById('decisionButtonsSlot');
+            const decisionButtons = slot ? slot.querySelector('.decision-buttons') : null;
+            const decisionActive = !!(decisionButtons && decisionButtons.dataset && decisionButtons.dataset.active === 'true');
+            if (decisionActive) {
                 return;
             }
 
@@ -1068,7 +1271,21 @@
         function makeOffer() {
             console.log('makeOffer() called');
             const manualOfferInput = document.getElementById('manualOffer');
-            const manualOffer = parseFloat(manualOfferInput.value);
+
+            // If an offer was already made this round, ensure decision buttons are visible
+            if (gameState.offerMadeThisRound) {
+                const slot = document.getElementById('decisionButtonsSlot');
+                const existingButtons = slot ? slot.querySelector('.decision-buttons') : null;
+                if (!existingButtons) {
+                    console.log('Offer already made; decision buttons missing. Rendering now.');
+                    showDecisionButtons();
+                } else {
+                    console.log('Offer already made and buttons visible. No action.');
+                }
+                return;
+            }
+
+            const manualOffer = parseCurrencyInput(manualOfferInput ? manualOfferInput.value : null);
 
             // Only allow manual offers - no automatic generation
             if (!manualOffer || manualOffer <= 0) {
@@ -1079,16 +1296,12 @@
             const offerAmount = manualOffer;
             manualOfferInput.value = ''; // Clear input
 
-            // Prevent duplicate offers in same round
-            if (gameState.offerMadeThisRound) {
-                console.log('Offer already made this round, exiting');
-                return;
-            }
+            // No duplicate-offer branch here; handled at the top now
             console.log('Setting offer for this round');
             gameState.offerMadeThisRound = true;
 
             // Show offer to player (in real implementation, this would be on a separate display)
-            document.getElementById('gameStatus').textContent = `Banker's Offer: ${formatCurrency(offerAmount)}`;
+            document.getElementById('gameStatus').textContent = `Banker's Offer: ${formatCurrency(offerAmount)} — Make Your Decision below`;
 
             // Add to history
             const offerData = {
@@ -1114,10 +1327,8 @@
         function setManualOffer() {
             const manualOfferInput = document.getElementById('manualOffer');
             const offer = parseFloat(manualOfferInput.value);
-
-            if (offer > 0) {
-                makeOffer();
-            }
+            // Always delegate to makeOffer for validation and button rendering
+            makeOffer();
         }
 
         // Handle player's decision
@@ -1142,21 +1353,130 @@
             }
 
             updateHistory();
+            // Always hide decision buttons after a decision
+            hideDecisionButtons();
+        }
 
-            // Remove existing decision buttons (only if not showing KEEP/SWAP)
-            if (!accepted || !gameState.finalRound) {
-                const gameStatus = document.getElementById('gameStatus');
-                const existingContainer = gameStatus.querySelector('.decision-buttons');
-                if (existingContainer) {
-                    existingContainer.remove();
+        // Ensure decision slot and buttons exist (persistently rendered)
+        function ensureDecisionButtonsSlot() {
+            let slot = document.getElementById('decisionButtonsSlot');
+            if (!slot) {
+                const offerSection = document.querySelector('.offer-section');
+                if (offerSection && offerSection.parentNode) {
+                    slot = document.createElement('div');
+                    slot.id = 'decisionButtonsSlot';
+                    slot.className = 'decision-buttons-slot';
+                    slot.style.display = 'block';
+                    slot.style.padding = '20px 0 40px 0';
+                    slot.style.marginTop = '12px';
+                    slot.style.border = '1px solid #ffd700';
+                    slot.style.borderRadius = '8px';
+                    slot.style.background = 'rgba(255,215,0,0.08)';
+                    offerSection.parentNode.insertBefore(slot, offerSection.nextSibling);
+                } else {
+                    const controller = document.querySelector('.controller-panel');
+                    if (controller) {
+                        slot = document.createElement('div');
+                        slot.id = 'decisionButtonsSlot';
+                        slot.className = 'decision-buttons-slot';
+                        slot.style.display = 'block';
+                        slot.style.padding = '20px 0 40px 0';
+                        slot.style.marginTop = '12px';
+                        slot.style.border = '1px solid #ffd700';
+                        slot.style.borderRadius = '8px';
+                        slot.style.background = 'rgba(255,215,0,0.08)';
+                        controller.appendChild(slot);
+                    }
                 }
             }
+
+            if (!slot) return null;
+
+            // Build label and button container only if missing
+            let label = slot.querySelector('.decision-label');
+            if (!label) {
+                label = document.createElement('div');
+                label.className = 'decision-label';
+                label.textContent = 'Make Your Decision:';
+                label.style.textAlign = 'center';
+                label.style.color = '#ffd700';
+                label.style.fontWeight = 'bold';
+                label.style.marginBottom = '10px';
+                slot.appendChild(label);
+            }
+
+            let buttonContainer = slot.querySelector('.decision-buttons');
+            if (!buttonContainer) {
+                buttonContainer = document.createElement('div');
+                buttonContainer.className = 'decision-buttons';
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.gap = '15px';
+                buttonContainer.style.justifyContent = 'center';
+
+                const dealButton = document.createElement('button');
+                dealButton.textContent = 'SHILL';
+                dealButton.className = 'control-btn';
+                dealButton.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+                dealButton.style.color = 'white';
+                dealButton.style.padding = '12px 24px';
+                dealButton.style.fontSize = '16px';
+                dealButton.style.fontWeight = 'bold';
+                dealButton.style.borderRadius = '8px';
+                dealButton.style.border = 'none';
+                dealButton.style.cursor = 'pointer';
+                dealButton.style.transition = 'all 0.3s ease';
+                dealButton.onmouseover = () => { if (!dealButton.disabled) dealButton.style.transform = 'translateY(-2px)'; };
+                dealButton.onmouseout = () => dealButton.style.transform = 'translateY(0)';
+                dealButton.onclick = () => { if (!dealButton.disabled) handleDecision(true); };
+
+                const noDealButton = document.createElement('button');
+                noDealButton.textContent = 'NO SHILL';
+                noDealButton.className = 'control-btn';
+                noDealButton.style.background = 'linear-gradient(45deg, #f44336, #ef5350)';
+                noDealButton.style.color = 'white';
+                noDealButton.style.padding = '12px 24px';
+                noDealButton.style.fontSize = '16px';
+                noDealButton.style.fontWeight = 'bold';
+                noDealButton.style.borderRadius = '8px';
+                noDealButton.style.border = 'none';
+                noDealButton.style.cursor = 'pointer';
+                noDealButton.style.transition = 'all 0.3s ease';
+                noDealButton.onmouseover = () => { if (!noDealButton.disabled) noDealButton.style.transform = 'translateY(-2px)'; };
+                noDealButton.onmouseout = () => noDealButton.style.transform = 'translateY(0)';
+                noDealButton.onclick = () => { if (!noDealButton.disabled) handleDecision(false); };
+
+                buttonContainer.appendChild(dealButton);
+                buttonContainer.appendChild(noDealButton);
+                slot.appendChild(buttonContainer);
+            }
+
+            return slot;
+        }
+
+        // Disable decision buttons but keep them visible
+        function hideDecisionButtons() {
+            const slot = ensureDecisionButtonsSlot();
+            if (!slot) return;
+            const buttonContainer = slot.querySelector('.decision-buttons');
+            const buttons = buttonContainer ? buttonContainer.querySelectorAll('button') : [];
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.filter = 'grayscale(35%)';
+                btn.style.cursor = 'not-allowed';
+                btn.style.transform = 'translateY(0)';
+            });
+            if (buttonContainer) buttonContainer.dataset.active = 'false';
+            slot.style.display = 'block';
+            slot.style.visibility = 'visible';
         }
 
         // Move to next round
         function nextRound() {
             console.log(`nextRound() called - current round: ${gameState.currentRound}`);
             console.log('Remaining selectable cases:', getUnopenedSelectableCasesCount());
+            // Hide any lingering decision buttons when advancing rounds
+            hideDecisionButtons();
             gameState.currentRound++;
             gameState.offerMadeThisRound = false; // Reset offer flag for new round
             console.log(`Moved to round ${gameState.currentRound}`);
@@ -1265,6 +1585,18 @@
                 return `$${amount.toFixed(2)}`;
             }
             return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+        }
+
+        // Parse inputs like "$1,000" or "1,000" into a number
+        function parseCurrencyInput(value) {
+            if (value == null) return NaN;
+            try {
+                const cleaned = String(value).replace(/[^0-9.\-]/g, '');
+                const num = parseFloat(cleaned);
+                return isFinite(num) ? num : NaN;
+            } catch (_) {
+                return NaN;
+            }
         }
 
         // Max prize input removed: use gameMasterSettings.maxPrizeAmount via applyGameMasterSettings()
@@ -1501,60 +1833,20 @@
         // Show decision buttons after offer is made
         function showDecisionButtons() {
             console.log('showDecisionButtons() called');
-            const gameStatus = document.getElementById('gameStatus');
-
-            // Remove existing buttons first
-            const existingContainer = gameStatus.querySelector('.decision-buttons');
-            if (existingContainer) {
-                existingContainer.remove();
-            }
-
-            // Create new button container
-            console.log('Creating decision button container');
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'decision-buttons';
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.gap = '15px';
-            buttonContainer.style.marginTop = '15px';
-            buttonContainer.style.justifyContent = 'center';
-
-            // Create DEAL button
-            const dealButton = document.createElement('button');
-            dealButton.textContent = 'SHILL';
-            dealButton.className = 'control-btn';
-            dealButton.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
-            dealButton.style.color = 'white';
-            dealButton.style.padding = '12px 24px';
-            dealButton.style.fontSize = '16px';
-            dealButton.style.fontWeight = 'bold';
-            dealButton.style.borderRadius = '8px';
-            dealButton.style.border = 'none';
-            dealButton.style.cursor = 'pointer';
-            dealButton.style.transition = 'all 0.3s ease';
-            dealButton.onmouseover = () => dealButton.style.transform = 'translateY(-2px)';
-            dealButton.onmouseout = () => dealButton.style.transform = 'translateY(0)';
-            dealButton.onclick = () => handleDecision(true);
-
-            // Create NO DEAL button
-            const noDealButton = document.createElement('button');
-            noDealButton.textContent = 'NO SHILL';
-            noDealButton.className = 'control-btn';
-            noDealButton.style.background = 'linear-gradient(45deg, #f44336, #ef5350)';
-            noDealButton.style.color = 'white';
-            noDealButton.style.padding = '12px 24px';
-            noDealButton.style.fontSize = '16px';
-            noDealButton.style.fontWeight = 'bold';
-            noDealButton.style.borderRadius = '8px';
-            noDealButton.style.border = 'none';
-            noDealButton.style.cursor = 'pointer';
-            noDealButton.style.transition = 'all 0.3s ease';
-            noDealButton.onmouseover = () => noDealButton.style.transform = 'translateY(-2px)';
-            noDealButton.onmouseout = () => noDealButton.style.transform = 'translateY(0)';
-            noDealButton.onclick = () => handleDecision(false);
-
-            buttonContainer.appendChild(dealButton);
-            buttonContainer.appendChild(noDealButton);
-            gameStatus.appendChild(buttonContainer);
+            const slot = ensureDecisionButtonsSlot();
+            if (!slot) return;
+            const buttonContainer = slot.querySelector('.decision-buttons');
+            const buttons = buttonContainer ? buttonContainer.querySelectorAll('button') : [];
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.filter = 'none';
+                btn.style.cursor = 'pointer';
+            });
+            if (buttonContainer) buttonContainer.dataset.active = 'true';
+            slot.style.display = 'block';
+            slot.style.visibility = 'visible';
+            try { slot.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
         }
 
         // Open Game Master Settings
@@ -1621,6 +1913,8 @@
         // Initialize the game when page loads
         window.onload = function() {
             initializeGame();
+            setupUILayoutEnhancements();
+            initTitleSparkles();
         };
     </script>
     <!-- Case Attachment Modal (Image/Audio) -->
@@ -1665,6 +1959,16 @@
           var newGameBtn=document.getElementById('newGameBtn'); if(newGameBtn) newGameBtn.addEventListener('click', function(){ playTone(880,0.07,'triangle'); });
           var settingsBtn=document.getElementById('settingsBtn'); if(settingsBtn) settingsBtn.addEventListener('click', function(){ playTone(660,0.06,'square'); });
           var setOfferBtn=document.getElementById('setOfferBtn'); if(setOfferBtn) setOfferBtn.addEventListener('click', function(){ playTone(330,0.08,'sine'); });
+          // Allow pressing Enter in offer input to set the offer
+          var manualOfferInput=document.getElementById('manualOffer');
+          if(manualOfferInput){
+            manualOfferInput.addEventListener('keydown', function(e){
+              if(e.key==='Enter'){
+                try{ playTone(330,0.08,'sine'); }catch(_){}
+                try{ makeOffer(); }catch(err){ console.error('Error calling makeOffer from Enter key:', err); }
+              }
+            });
+          }
 
           // Auto-swap icons to AI versions if present
           var icons=document.querySelectorAll('img.icon');

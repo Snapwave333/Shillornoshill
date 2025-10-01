@@ -1,6 +1,6 @@
 {
   "name": "shill-or-no-shill-app",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Shill Or No Shill packaged as a Windows desktop app",
   "main": "electron/main.js",
   "author": "",
@@ -9,7 +9,8 @@
     "start": "electron .",
     "build": "electron-builder --win",
     "release": "electron-builder --win --publish always",
-    "tag": "git tag v$npm_package_version && git push origin v$npm_package_version",
+    "pretag": "npm run notes && node scripts/verify-version-docs.js",
+    "tag": "node scripts/tag-version.js",
     "notes": "node scripts/generate-release-notes.js",
     "postinstall": "echo Postinstall completed",
     "icons": "node scripts/generate-icon.js",
@@ -54,7 +55,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "build/Gemini_Generated_Image_jk9vkjjk9vkjjk9v.ico",
       "signAndEditExecutable": false
     },
     "nsis": {
@@ -64,8 +65,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
+      "installerIcon": "build/Gemini_Generated_Image_jk9vkjjk9vkjjk9v.ico",
+      "uninstallerIcon": "build/Gemini_Generated_Image_jk9vkjjk9vkjjk9v.ico",
       "shortcutName": "Shill Or No Shill"
     },
     "fileAssociations": [

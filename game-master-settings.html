@@ -591,6 +591,16 @@
             <p>Configure Your Shill or No Shill Experience</p>
         </div>
         
+        <!-- Action Buttons moved to top -->
+        <div class="action-buttons">
+            <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
+            <button class="action-btn" onclick="launchGame()">Launch Game</button>
+            <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
+            <button class="action-btn" id="randomizeCasePositionsBtn" onclick="randomizeCasePositions()">🎲 Randomize Case Positions</button>
+            <button class="action-btn" id="saveTemplateBtn" onclick="saveSettingsAsTemplate()">💾 Save as Template</button>
+            <button class="action-btn secondary" id="loadTemplateBtn" onclick="triggerTemplateUpload()">📂 Load Template</button>
+        </div>
+        <input type="file" id="templateFileInput" accept="application/json" style="display:none" onchange="handleTemplateFileChange(event)">
 
         <div class="settings-grid">
             <!-- Settings Preview (moved above Prize Configuration) -->
@@ -660,22 +670,7 @@
             </div>
         </div>
 
-                <!-- Case Value Editor Toggle -->
-                <div class="setting-group">
-                    <label class="setting-label">Case Value Editor Mode</label>
-                    <div class="setting-description">
-                        Switch between Standard Scaled Game and Custom Value Game. In Custom mode, the manual values below override scaling and zero-amount traps.
-                    </div>
-                    <div class="input-group">
-                        <label style="display:flex; align-items:center; gap:8px;">
-                            <input type="checkbox" id="useCustomValuesToggle" onchange="toggleCustomValuesMode()">
-                            Use Custom Case Values (override)
-                        </label>
-                    </div>
-                    <div id="customModeNotice" style="display:none; margin-top:8px; font-size:0.85rem; color:#ffcc66;">
-                        Custom mode enabled: Max Prize Amount and Zero-Amount Cases are disabled.
-                    </div>
-                </div>
+                <!-- Case Value Editor Mode removed -->
 
                 <!-- Case Value Editor Grid -->
                 <div class="setting-group lg-glass" id="caseValueEditor">
@@ -805,16 +800,7 @@
 
         
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
-            <button class="action-btn" onclick="launchGame()">Launch Game</button>
-            <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
-            <button class="action-btn" id="randomizeCasePositionsBtn" onclick="randomizeCasePositions()">🎲 Randomize Case Positions</button>
-            <button class="action-btn" id="saveTemplateBtn" onclick="saveSettingsAsTemplate()">💾 Save as Template</button>
-            <button class="action-btn secondary" id="loadTemplateBtn" onclick="triggerTemplateUpload()">📂 Load Template</button>
-        </div>
-        <input type="file" id="templateFileInput" accept="application/json" style="display:none" onchange="handleTemplateFileChange(event)">
+        
     
 
     <script>
@@ -1040,7 +1026,6 @@
             });
 
             // Build a compact table and charts
-            const modeLabel = gameSettings.useCustomValues ? 'Custom Value Game' : 'Standard Scaled Game';
             summary.innerHTML = `
                 <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Overview</div>
                 <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
@@ -1067,23 +1052,10 @@
                             <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Zero-Amount Traps</td>
                             <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.zeroAmountCases}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Mode</td>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${modeLabel}</td>
-                        </tr>
+                        
                     </tbody>
                 </table>
-
-                <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;"> 
-                    <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px;">
-                        <div style="font-weight: 600; margin-bottom: 6px; color: #ffea00;">Case Value Distribution</div>
-                        <canvas id="valuesChart" width="600" height="240"></canvas>
-                    </div>
-                    <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px;">
-                        <div style="font-weight: 600; margin-bottom: 6px; color: #ffea00;">Round Opening Sequence (cases per round)</div>
-                        <canvas id="sequenceChart" width="600" height="240"></canvas>
-                    </div>
-                </div>
+                <!-- Charts removed from Configuration Preview -->
             `;
 
             // Keep the editor values coherent with preview when not in custom mode
@@ -1091,8 +1063,7 @@
                 renderCaseValueGrid(scaledValues);
             }
 
-            // Render simple charts without external libraries
-            drawCharts(scaledValues, gameSettings.caseOpeningSequence);
+            // Charts removed: skip rendering in Configuration Preview
         }
 
         function drawCharts(values, sequence) {

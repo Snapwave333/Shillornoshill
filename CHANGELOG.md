@@ -36,3 +36,14 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
   - Preferences persist to userData and are applied on launch.## v1.4.0 — Stable
 - See RELEASE_NOTES.md for detailed changes.
 
+## 1.4.1 (Stable)
+
+- Settings UI
+  - Moved primary action buttons to the top under the header.
+  - Removed charts from Configuration Preview.
+  - Removed Case Value Editor Mode toggle; custom values are standard.
+
+- Release
+  - Version bump to 1.4.1.
+  - Updated release notes.
+

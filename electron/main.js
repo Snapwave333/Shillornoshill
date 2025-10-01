@@ -39,7 +39,7 @@ function saveWindowPrefs() {
 
 function createWindow() {
   loadWindowPrefs();
-  const icoPath = path.join(__dirname, '..', 'build', 'icon.ico');
+  const icoPath = path.join(__dirname, '..', 'build', 'Gemini_Generated_Image_jk9vkjjk9vkjjk9v.ico');
   const fallbackIcon = path.join(__dirname, '..', 'hill-or-no-shill-logo.png');
   mainWindow = new BrowserWindow({
     width: 1280,

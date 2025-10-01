@@ -1,5 +1,18 @@
 # Shill Or No Shill — Release Notes
 
+## v1.4.1 — Stable
+Release Date: October 1, 2025
+
+### UI Changes
+- Settings: Moved action buttons (Save, Launch, Export, Randomize, Save Template, Load Template) to the top under the header.
+- Settings: Removed charts from Configuration Preview for a cleaner summary.
+- Settings: Removed "Case Value Editor Mode" toggle and "Use Custom Case Values" options; all cases are custom by design.
+
+### Notes
+- Functionality for Case Value Editor, max prize, and zero-value case steppers remains intact.
+- No breaking changes to template schema.
+
+---
 ## v1.4.0 — Stable
 Release Date: September 30, 2025
 

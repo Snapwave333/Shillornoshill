@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/images/branding/hero-banner.svg" alt="Shill Or No Shill • Hero Banner" width="100%" />
+</p>
+
 # Shill Or No Shill
 
 ## Banner
@@ -126,6 +130,10 @@ See assets/ai/prompts.md for standardized prompts, sizes, and filenames for:
 Placeholder assets are already checked in under assets/images/ so you can preview layout before replacing them with your generated images.
 
 ## Screenshots & Concept Art
+
+<p>
+  <img src="assets/images/branding/social-preview.svg" alt="Social Preview" />
+</p>
 
 Below are AI-styled concept visuals that illustrate the app screens:
 

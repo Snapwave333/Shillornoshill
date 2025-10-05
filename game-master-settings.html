@@ -995,10 +995,12 @@
                 case 'maxDollarBoxes':
                     gameSettings.maxDollarBoxes = Math.max(1, Math.min(10, gameSettings.maxDollarBoxes + delta));
                     document.getElementById('maxDollarBoxes').textContent = gameSettings.maxDollarBoxes;
+                    // No grid rebuild needed
                     break;
                 case 'zeroCases':
                     gameSettings.zeroAmountCases = Math.max(0, Math.min(5, gameSettings.zeroAmountCases + delta));
                     document.getElementById('zeroCases').textContent = gameSettings.zeroAmountCases;
+                    // No grid rebuild needed
                     break;
             }
             updateSettingsSummary();
@@ -1099,7 +1101,7 @@
 
             // Keep the editor values coherent with preview when not in custom mode
             if (!gameSettings.useCustomValues) {
-                renderCaseValueGrid(scaledValues);
+                updateCaseValueInputs(scaledValues);
             }
 
             // Charts removed: skip rendering in Configuration Preview
@@ -1208,13 +1210,15 @@
             const override = Array.isArray(gameSettings.customValuesOverride) ? gameSettings.customValuesOverride : [];
             if (override.length > 0) {
                 initialValues = override.slice(0, count);
+            } else if (Array.isArray(previewValues) && previewValues.length > 0) {
+                initialValues = previewValues.slice(0, count).map(v => typeof v === 'number' ? v.toFixed(2) : String(v));
             } else {
                 initialValues = Array.from({ length: count }, () => '0.00');
             }
 
-            // If fewer values than count, pad with last known or 0
+            // If fewer values than count, pad with last known or '0.00'
             while (initialValues.length < count) {
-                initialValues.push(initialValues[initialValues.length - 1] ?? 0);
+                initialValues.push(initialValues[initialValues.length - 1] ?? '0.00');
             }
 
             grid.innerHTML = '';
@@ -1231,7 +1235,7 @@
                 input.id = `caseValueInput_${i + 1}`;
                 input.className = 'setting-input';
                 input.placeholder = 'e.g., 1000 or 0.01';
-                // Store raw string for integrity, but hydrate with initial numeric value
+                // Store raw string for integrity, but hydrate with initial value
                 const v = initialValues[i];
                 input.value = (typeof v === 'string') ? v : String(v);
 
@@ -1246,6 +1250,28 @@
                 wrapper.appendChild(input);
                 wrapper.appendChild(customizeBtn);
                 grid.appendChild(wrapper);
+            }
+        }
+
+        // Smoothly update existing grid input values without rebuilding the DOM.
+        // Preserves the currently focused input to avoid interrupting user edits.
+        function updateCaseValueInputs(previewValues) {
+            const grid = document.getElementById('caseValueGrid');
+            if (!grid) return;
+            const count = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+            const activeEl = document.activeElement;
+            for (let i = 1; i <= count; i++) {
+                const el = document.getElementById(`caseValueInput_${i}`);
+                if (!el) continue;
+                if (el === activeEl) continue; // don't overwrite the user's current edit
+                let v = '0.00';
+                if (gameSettings.useCustomValues && Array.isArray(gameSettings.customValuesOverride) && gameSettings.customValuesOverride.length >= i) {
+                    v = gameSettings.customValuesOverride[i - 1] || '0.00';
+                } else if (Array.isArray(previewValues) && previewValues.length >= i) {
+                    const pv = previewValues[i - 1];
+                    v = (typeof pv === 'number') ? pv.toFixed(2) : String(pv);
+                }
+                el.value = v;
             }
         }
 
@@ -2011,9 +2037,20 @@
             }
 
             saveSettings();
-            renderCaseValueGrid();
+            // Update only the targeted input in-place to avoid wiping other edits
+            const el = document.getElementById(`caseValueInput_${n}`);
+            if (el) {
+                const val = gameSettings.customValuesOverride[idx] || '0.00';
+                const isFocused = (document.activeElement === el);
+                el.value = val;
+                // Keep focus intact if the user is actively editing
+                if (isFocused) {
+                    // No-op
+                }
+            }
             updateConfiguredCasesList();
             reflectCustomModeInUI();
+            updateSettingsSummary();
 
             // Feedback
             const saveBtn = document.getElementById('cwSaveBtn');

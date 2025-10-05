@@ -65,3 +65,6 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
   - Version bump to 1.4.3.
   - Updated release notes and README.
 
+## v2.0.4 — Stable
+- See RELEASE_NOTES.md for detailed changes.
+

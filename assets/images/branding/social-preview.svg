@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#00E6FF" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#7C3AED" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00E6FF"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="950" cy="220" r="480" fill="url(#glow)"/>
+
+  <!-- Title cluster -->
+  <g transform="translate(120,220)">
+    <text x="0" y="0" font-family="Montserrat,Segoe UI,Arial" font-size="90" font-weight="900" fill="#e2e8f0">
+      Shill Or No Shill
+    </text>
+    <rect x="0" y="20" width="560" height="10" rx="5" fill="url(#accent)"/>
+    <text x="0" y="70" font-family="Segoe UI,Arial" font-size="28" fill="#a5b4fc">
+      Decision support for hype, finance, and social influence
+    </text>
+  </g>
+
+  <!-- Motif: scales, coin, chat bubble -->
+  <g transform="translate(860,340)">
+    <line x1="-120" y1="-20" x2="120" y2="-20" stroke="#7C3AED" stroke-width="8"/>
+    <rect x="-8" y="-60" width="16" height="120" rx="8" fill="#0ea5e9"/>
+    <circle cx="-120" cy="60" r="48" fill="#00E6FF" opacity="0.85"/>
+    <circle cx="120" cy="60" r="48" fill="#7C3AED" opacity="0.85"/>
+    <g transform="translate(200,10)">
+      <circle cx="0" cy="0" r="44" fill="#fbbf24"/>
+      <circle cx="0" cy="0" r="36" fill="#fde68a"/>
+      <text x="-12" y="14" font-size="28" font-family="Segoe UI" fill="#0f172a" font-weight="800">$</text>
+    </g>
+    <g transform="translate(300,-50)">
+      <rect x="-80" y="-40" width="160" height="80" rx="16" fill="#10b981"/>
+      <polygon points="60,40 90,60 80,30" fill="#10b981"/>
+      <circle cx="-30" cy="0" r="8" fill="#fff"/>
+      <circle cx="0" cy="0" r="8" fill="#fff"/>
+      <circle cx="30" cy="0" r="8" fill="#fff"/>
+    </g>
+  </g>
+
+  <!-- Footer line -->
+  <rect x="120" y="560" width="1040" height="6" rx="3" fill="url(#accent)"/>
+</svg>

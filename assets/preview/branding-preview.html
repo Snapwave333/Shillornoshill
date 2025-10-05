@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Branding Preview • Shill Or No Shill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #0f172a;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent-a: #00E6FF;
+      --accent-b: #7C3AED;
+    }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); font-family: Segoe UI, Montserrat, Arial, sans-serif; color: var(--text); }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 40px; }
+    h1 { margin: 0 0 18px; font-size: 28px; }
+    p { color: var(--muted); }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    .card { background: var(--panel); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .imgbox { display: grid; place-items: center; border-radius: 12px; background: #0b1226; padding: 16px; }
+    .imgbox img, .imgbox svg { max-width: 100%; height: auto; border-radius: 8px; }
+    .badge { display: inline-block; padding: 8px 12px; border-radius: 999px; background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #081226; font-weight: 700; margin-right: 10px; }
+    footer { margin-top: 20px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Branding Preview</h1>
+  <p>Quick visual check of freshly generated SVG assets. No placeholders. No fluff. Pure vector goodness.</p>
+
+  <div class="card">
+    <div class="imgbox">
+      <img src="../images/branding/hero-banner.svg" alt="Hero Banner" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h2>Logo (Dark)</h2>
+      <div class="imgbox">
+        <img src="../images/branding/logo-dark.svg" alt="Logo Dark" />
+      </div>
+    </div>
+    <div class="card">
+      <h2>Logo (Light)</h2>
+      <div class="imgbox">
+        <img src="../images/branding/logo-light.svg" alt="Logo Light" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Social Preview</h2>
+    <div class="imgbox">
+      <img src="../images/branding/social-preview.svg" alt="Social Preview" />
+    </div>
+    <p class="muted">Set this as your repository social preview in GitHub settings for better link shares.</p>
+  </div>
+
+  <footer>
+    <span class="badge">Vector • SVG</span>
+    <span class="badge">Performance • Crisp</span>
+    <span class="badge">No Placeholders</span>
+  </footer>
+</div>
+</body>
+</html>

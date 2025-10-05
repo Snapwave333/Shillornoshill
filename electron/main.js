@@ -314,7 +314,7 @@ function setupAutoUpdater() {
       notes = readLocalReleaseNotes(info.version) || (await fetchGitHubReleaseNotes(info.version)) || [];
     }
     const message = `A new version v${info.version} is available.`;
-    const detail = notes.length ? `What's new:\n\n${notes.join('\n')}` : 'Release notes are available on GitHub Releases.';
+    const detail = notes.length ? `What's new:\n\n${notes.join('\n')}` : 'Release notes are available online.';
     // Show a concise notification summary as well
     try {
       const short = notes.slice(0, 3).map(n => n.replace(/^\-\s*/, '')).join(' • ');
@@ -324,9 +324,9 @@ function setupAutoUpdater() {
     try {
       const result = await dialog.showMessageBox({
         type: 'info',
-        buttons: ['Update Now', 'Later'],
+        buttons: ['Update Now', 'View Changelog', 'Later'],
         defaultId: 0,
-        cancelId: 1,
+        cancelId: 2,
         title: 'Update Available',
         message,
         detail,
@@ -337,6 +337,15 @@ function setupAutoUpdater() {
         const n = new Notification({ title: 'Updater', body: `Downloading v${info.version}...` });
         n.show();
         try { await autoUpdater.downloadUpdate(); } catch (e) { log.error('Updater: downloadUpdate failed', e); }
+      } else if (result.response === 1) {
+        // View Changelog
+        const { owner, repo } = getPublishRepo();
+        const url = `https://github.com/${owner}/${repo}/releases/v${info.version}`;
+        require('electron').shell.openExternal(url);
+        // After opening, perhaps prompt again, but for simplicity, dismiss for now
+        log.info('Updater: user chose to view changelog');
+        const n = new Notification({ title: 'Updater', body: 'Changelog opened. You can update later from the menu.' });
+        n.show();
       } else {
         log.info('Updater: user deferred update');
         const n = new Notification({ title: 'Updater', body: 'Update dismissed. You can update later from the menu.' });

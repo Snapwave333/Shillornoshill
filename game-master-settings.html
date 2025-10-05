@@ -438,7 +438,7 @@
         }
 
         .action-btn {
-            padding: 10px 16px;
+            padding: 0px 0px; /* reduced by ~30px on all sides from original */
             border: none;
             border-radius: 12px;
             font-size: 0.95rem;
@@ -447,7 +447,7 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            min-width: 150px;
+            min-width: 120px; /* smaller footprint */
         }
 
         .btn-save {
@@ -602,7 +602,7 @@
         </div>
         
         <!-- Action Buttons moved to top -->
-        <div class="action-buttons">
+        <div class="action-buttons" style="position:relative;">
             <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
             <button class="action-btn" onclick="launchGame()">Launch Game</button>
             <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
@@ -610,6 +610,17 @@
             <button class="action-btn" id="randomizeCasePositionsBtn" onclick="randomizeCasePositions()">🎲 Randomize Case Positions</button>
             <button class="action-btn" id="saveTemplateBtn" onclick="saveSettingsAsTemplate()">💾 Save as Template</button>
             <button class="action-btn secondary" id="loadTemplateBtn" onclick="triggerTemplateUpload()">📂 Load Template</button>
+            <button class="action-btn" id="themeDropdownBtn" aria-haspopup="dialog" aria-expanded="false">🎨 Theme</button>
+            <div id="themeDropdown" class="dropdown-panel lg-glass" role="dialog" aria-modal="false" aria-label="Theme Picker" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:min(720px,92vw); padding:12px; border-radius:12px; box-shadow: var(--lg-shadow-outer); border:1px solid var(--lg-border); z-index:1000;">
+              <div class="setting-description">Choose your vibe. Smooth transitions, light/dark friendly, and accessible contrast. Hover to preview, click to select.</div>
+              <div class="theme-picker-toolbar" style="display:flex;align-items:center;gap:12px;justify-content:flex-end;margin-bottom:8px;">
+                <label class="setting-label" for="highContrastToggle" style="display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" id="highContrastToggle" />
+                  High Contrast
+                </label>
+              </div>
+              <div class="theme-picker-grid" id="themePickerGrid" role="radiogroup" aria-label="Theme Picker" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;"></div>
+            </div>
         </div>
         <input type="file" id="templateFileInput" accept="application/json" style="display:none" onchange="handleTemplateFileChange(event)">
 
@@ -620,6 +631,18 @@
                 <div class="settings-summary" id="settingsSummary">
                     Loading configuration preview...
                 </div>
+            </div>
+            <!-- Theme Picker Panel (hidden; use dropdown) -->
+            <div class="settings-panel lg-glass theme-picker-panel" id="themePickerPanel" style="display:none;">
+                <h2 class="panel-title">Theme Picker</h2>
+                <div class="setting-description">Use the 🎨 Theme button above to open the Theme Picker dropdown.</div>
+                <div class="theme-picker-toolbar" style="display:none;align-items:center;gap:12px;justify-content:flex-end;margin-bottom:8px;">
+                    <label class="setting-label" for="highContrastToggleHidden" style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="highContrastToggleHidden" />
+                        High Contrast
+                    </label>
+                </div>
+                <div class="theme-picker-grid" id="themePickerGridHidden" role="radiogroup" aria-label="Theme Picker" style="display:none;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;"></div>
             </div>
             <!-- Prize Configuration Panel -->
             <div class="settings-panel prize-config">
@@ -758,6 +781,9 @@
 
                     <div class="configured-cases" id="configuredCases">
                         <h4>Configured Cases:</h4>
+                        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+                            <button class="action-btn-small secondary" onclick="clearAllConfiguredCases()">Clear All Configured Cases</button>
+                        </div>
                         <div id="casesList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
                     </div>
                 </div>
@@ -830,7 +856,9 @@
             customValuesOverride: [], // store raw amounts as strings
             // UI effects
             overlayIntensity: 0.6, // 0.0 - 1.0
-            sfxEnabled: true
+            sfxEnabled: true,
+            uiTheme: 'aurora-drift',
+            highContrast: false
         };
 
         // Simple UI tone generator (no external assets)
@@ -915,6 +943,9 @@
             reflectCustomModeInUI();
             setupUIAudioAndOverlay();
             autoSwapAIIcons();
+            buildThemePicker();
+            applyTheme(gameSettings.uiTheme || 'aurora-drift');
+            setupHighContrastToggle();
         }
 
         function setupUIAudioAndOverlay() {
@@ -1286,13 +1317,8 @@
                 if (!el) continue;
                 const raw = (el.value || '').trim();
                 if (raw === '') { errors.push(`Case ${i} is empty`); continue; }
-                // Validate number-like; allow commas
-                const sanitized = raw.replace(/[,\s]/g, '');
-                const num = Number(sanitized);
-                if (!isFinite(num) || num < 0) {
-                    errors.push(`Case ${i} has invalid amount`);
-                }
-                values.push(raw); // store raw string for integrity
+                // Accept numeric-like and text values; only reject empty
+                values.push(raw); // store raw string verbatim (number-like handled at runtime)
             }
 
             if (errors.length) {
@@ -1838,6 +1864,24 @@
             });
         }
 
+        function clearAllConfiguredCases() {
+            const wasEmpty = Object.keys(gameSettings.customCaseContent || {}).length === 0;
+            if (wasEmpty) {
+                showToast('No Configured Cases', 'There are no cases to clear.');
+                return;
+            }
+            try {
+                gameSettings.customCaseContent = {};
+                updateConfiguredCasesList();
+                saveSettings();
+                showToast('Cleared', 'All configured cases have been removed.');
+                playUITone(420, 0.12, 0.05);
+            } catch (e) {
+                console.error('Failed to clear configured cases:', e);
+                showToast('Error', 'Could not clear configured cases.');
+            }
+        }
+
         // ===== CONTEXT MODAL (TEST POPUP) =====
         function testCasePopup() {
             if (!currentEditingCase) {
@@ -2162,6 +2206,157 @@
             <audio id="modalCaseAudio" controls style="width: 100%; display: none; margin-top:8px;"></audio>
         </div>
     </div>
+    <style>
+      /* Theme Picker styles (Fluent-inspired, accessible, animated) */
+      .theme-picker-panel .setting-description { color: var(--lg-text-dim); margin-bottom: 10px; }
+      .theme-card { display:flex; align-items:center; gap:12px; background: rgba(255,255,255,0.06); border:1px solid var(--lg-border); border-radius:14px; padding:12px; cursor:pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.35); transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease, background 480ms ease; }
+      .theme-card.hovering { transform: translateY(-2px); filter: brightness(1.05); }
+      .theme-card.selected { box-shadow: 0 0 0 2px var(--lg-accent), 0 10px 30px rgba(33,203,243,0.25); outline: none; }
+      .theme-thumb { flex:0 0 140px; height:92px; border-radius:12px; background:#222; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10); }
+      .theme-name { font-weight:600; color: var(--lg-text); }
+      .theme-desc { font-size:0.9rem; color: var(--lg-text-dim); }
+      body.liquid-glass-theme { transition: background 480ms ease, color 220ms ease; }
+
+      /* High-contrast mode tweaks */
+      body[data-high-contrast="true"] .theme-card { border-color: rgba(255,255,255,0.35); box-shadow: 0 0 0 2px rgba(255,255,255,0.25) inset; }
+      body[data-high-contrast="true"] .setting-input { border-color: rgba(255,255,255,0.35); }
+      body[data-high-contrast="true"] .action-btn { box-shadow: 0 12px 36px rgba(255,255,255,0.20); }
+
+      /* Light/Dark variable adaptation */
+      body.liquid-glass-theme.lg-light { --lg-text: #0f1218; --lg-text-dim: #334155; --lg-glass: rgba(255,255,255,0.70); --lg-glass-strong: rgba(255,255,255,0.85); --lg-border: rgba(0,0,0,0.12); --lg-shadow-outer: 0 18px 50px rgba(0,0,0,0.25), 0 6px 20px rgba(0,0,0,0.20); }
+
+      /* Theme-specific variables and backgrounds */
+      body.liquid-glass-theme[data-theme="aurora-drift"] { --lg-accent: #7cfaff; --lg-accent-2: #a45cff; --lg-bg-0: #1a213f; background: radial-gradient(1100px 500px at 20% 10%, rgba(124,250,255,0.25), transparent), radial-gradient(900px 500px at 80% 80%, rgba(164,92,255,0.25), transparent), linear-gradient(180deg, #0b1020 0%, #1a213f 100%); }
+      body.liquid-glass-theme[data-theme="neo-noir"] { --lg-accent: #00e6ff; --lg-accent-2: #ff0099; --lg-bg-0: #121212; background: radial-gradient(1000px 500px at 25% 15%, rgba(0,230,255,0.18), transparent), radial-gradient(800px 480px at 78% 85%, rgba(255,0,153,0.18), transparent), linear-gradient(180deg, #0a0a0a 0%, #121212 100%); }
+      body.liquid-glass-theme[data-theme="zen-garden"] { --lg-accent: #6ee7b7; --lg-accent-2: #f472b6; --lg-bg-0: #123125; background: radial-gradient(950px 480px at 25% 15%, rgba(110,231,183,0.22), transparent), radial-gradient(820px 500px at 80% 85%, rgba(244,114,182,0.18), transparent), linear-gradient(180deg, #0b1a13 0%, #123125 100%); }
+      body.liquid-glass-theme[data-theme="cyberwave"] { --lg-accent: #ff5c8a; --lg-accent-2: #00f0ff; --lg-bg-0: #2a1942; background: radial-gradient(1000px 500px at 25% 15%, rgba(255,92,138,0.22), transparent), radial-gradient(820px 500px at 80% 85%, rgba(0,240,255,0.22), transparent), linear-gradient(180deg, #1a1026 0%, #2a1942 100%); }
+      body.liquid-glass-theme[data-theme="paper-moon"] { --lg-accent: #c9c9c9; --lg-accent-2: #8a8a8a; --lg-bg-0: #181a1e; background: repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0 8px, rgba(255,255,255,0.03) 8px 16px), linear-gradient(180deg, #111315 0%, #181a1e 100%); }
+      body.liquid-glass-theme[data-theme="solar-flare"] { --lg-accent: #ff8a00; --lg-accent-2: #ff3d00; --lg-bg-0: #352515; background: radial-gradient(980px 500px at 22% 12%, rgba(255,138,0,0.20), transparent), radial-gradient(820px 500px at 82% 88%, rgba(255,61,0,0.18), transparent), linear-gradient(180deg, #1f1a0f 0%, #352515 100%); }
+      body.liquid-glass-theme[data-theme="ocean-depths"] { --lg-accent: #00e6ff; --lg-accent-2: #006dff; --lg-bg-0: #0e1a33; background: radial-gradient(1000px 500px at 25% 15%, rgba(0,230,255,0.20), transparent), radial-gradient(820px 500px at 80% 85%, rgba(0,109,255,0.20), transparent), linear-gradient(180deg, #081226 0%, #0e1a33 100%); }
+      body.liquid-glass-theme[data-theme="pixel-pop"] { --lg-accent: #ffd600; --lg-accent-2: #7c3aed; --lg-bg-0: #2a184f; background: linear-gradient(90deg, rgba(255,214,0,0.18) 0 20%, transparent 20 30%, rgba(0,229,255,0.18) 30 50%, transparent 50 55%, rgba(255,61,0,0.18) 55 75%, transparent 75 80%, rgba(124,58,237,0.18) 80 100%), linear-gradient(180deg, #1e103a 0%, #2a184f 100%); }
+      body.liquid-glass-theme[data-theme="copper-dust"] { --lg-accent: #c08457; --lg-accent-2: #8b5e34; --lg-bg-0: #2a1f18; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 2px, rgba(255,255,255,0.02) 2px 4px), linear-gradient(180deg, #130f0c 0%, #2a1f18 100%); }
+      body.liquid-glass-theme[data-theme="cloud-nine"] { --lg-accent: #ffb6c1; --lg-accent-2: #add8e6; --lg-bg-0: #e8eef7; background: radial-gradient(1000px 500px at 25% 15%, rgba(255,182,193,0.40), transparent), radial-gradient(820px 500px at 80% 85%, rgba(173,216,230,0.40), transparent), linear-gradient(180deg, #f3f6fb 0%, #e8eef7 100%); }
+    </style>
+    <script>
+      // Theme definitions and picker logic — dynamic, accessible, no placeholders
+      const THEME_DEFINITIONS = [
+        { key: 'aurora-drift', name: 'Aurora Drift', desc: 'Ethereal gradients inspired by northern lights', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(124,250,255,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(164,92,255,0.55), transparent), linear-gradient(135deg, #0b1020 0%, #1a213f 100%);' },
+        { key: 'neo-noir', name: 'Neo Noir', desc: 'Sleek black with neon accents', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(0,230,255,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(255,0,153,0.55), transparent), linear-gradient(135deg, #0a0a0a 0%, #121212 100%);' },
+        { key: 'zen-garden', name: 'Zen Garden', desc: 'Soft greens and floral motifs', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(110,231,183,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(244,114,182,0.45), transparent), linear-gradient(135deg, #0b1a13 0%, #123125 100%);' },
+        { key: 'cyberwave', name: 'Cyberwave', desc: 'Retro-futuristic synthwave palette', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(255,92,138,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(0,240,255,0.55), transparent), linear-gradient(135deg, #1a1026 0%, #2a1942 100%);' },
+        { key: 'paper-moon', name: 'Paper Moon', desc: 'Monochrome with hand-drawn textures', previewCSS: 'background: repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 6px, rgba(255,255,255,0.02) 6px 12px), linear-gradient(135deg, #111315 0%, #181a1e 100%);' },
+        { key: 'solar-flare', name: 'Solar Flare', desc: 'Warm oranges and dynamic shadows', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(255,138,0,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(255,61,0,0.55), transparent), linear-gradient(135deg, #1f1a0f 0%, #352515 100%);' },
+        { key: 'ocean-depths', name: 'Ocean Depths', desc: 'Deep blues with ripple effects', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(0,230,255,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(0,109,255,0.55), transparent), linear-gradient(135deg, #081226 0%, #0e1a33 100%);' },
+        { key: 'pixel-pop', name: 'Pixel Pop', desc: 'Vibrant, blocky, game-inspired visuals', previewCSS: 'background: linear-gradient(90deg, #FFD600 0 20%, transparent 20 30%, #00E5FF 30 50%, transparent 50 55%, #FF3D00 55 75%, transparent 75 80%, #7C3AED 80 100%), linear-gradient(135deg, #1e103a 0%, #2a184f 100%);' },
+        { key: 'copper-dust', name: 'Copper Dust', desc: 'Metallic tones with brushed textures', previewCSS: 'background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 2px, rgba(255,255,255,0.02) 2px 4px), linear-gradient(135deg, #130f0c 0%, #2a1f18 100%);' },
+        { key: 'cloud-nine', name: 'Cloud Nine', desc: 'Airy whites with pastel overlays', previewCSS: 'background: radial-gradient(120px 80px at 30% 20%, rgba(255,182,193,0.6), transparent), radial-gradient(110px 80px at 70% 80%, rgba(173,216,230,0.55), transparent), linear-gradient(135deg, #f3f6fb 0%, #e8eef7 100%);' }
+      ];
+
+      function applyTheme(themeKey){
+        const body = document.body;
+        body.setAttribute('data-theme', themeKey);
+        gameSettings.uiTheme = themeKey;
+        saveSettings();
+        const cards = Array.from(document.querySelectorAll('.theme-card'));
+        cards.forEach(c => {
+          const sel = c.getAttribute('data-key') === themeKey;
+          c.classList.toggle('selected', sel);
+          c.setAttribute('aria-checked', sel ? 'true' : 'false');
+        });
+      }
+
+      function setupHighContrastToggle(){
+        const t = document.getElementById('highContrastToggle');
+        if (!t) return;
+        t.checked = !!gameSettings.highContrast;
+        const body = document.body;
+        const update = () => {
+          gameSettings.highContrast = !!t.checked;
+          body.setAttribute('data-high-contrast', gameSettings.highContrast ? 'true' : 'false');
+          saveSettings();
+        };
+        update();
+        t.addEventListener('change', update);
+      }
+
+      function buildThemePicker(){
+        const grid = document.getElementById('themePickerGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        THEME_DEFINITIONS.forEach((t, idx) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'theme-card';
+          card.setAttribute('role','radio');
+          card.setAttribute('aria-label', `${t.name}: ${t.desc}`);
+          card.setAttribute('aria-checked','false');
+          card.setAttribute('tabindex', String(idx===0?0:-1));
+          card.setAttribute('data-key', t.key);
+
+          const thumb = document.createElement('div');
+          thumb.className = 'theme-thumb';
+          thumb.style = `${t.previewCSS} border-radius:12px; height:92px;`;
+
+          const meta = document.createElement('div');
+          meta.className = 'theme-meta';
+          meta.style = 'display:flex;flex-direction:column;gap:4px;';
+          const name = document.createElement('div'); name.className = 'theme-name'; name.textContent = t.name;
+          const desc = document.createElement('div'); desc.className = 'theme-desc'; desc.textContent = t.desc;
+          meta.appendChild(name); meta.appendChild(desc);
+
+          card.appendChild(thumb);
+          card.appendChild(meta);
+
+          card.addEventListener('click', () => { applyTheme(t.key); playUITone(640, 0.10, 0.05); });
+          card.addEventListener('mouseover', () => card.classList.add('hovering'));
+          card.addEventListener('mouseout', () => card.classList.remove('hovering'));
+          card.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); applyTheme(t.key); }
+            if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') { ev.preventDefault(); const next = card.nextElementSibling; if (next) next.focus(); }
+            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); const prev = card.previousElementSibling; if (prev) prev.focus(); }
+          });
+
+          grid.appendChild(card);
+        });
+        applyTheme(gameSettings.uiTheme || 'aurora-drift');
+      }
+    </script>
+    <script>
+      // Dropdown Theme Picker behavior wired to existing theme logic
+      (function(){
+        function toggleThemeDropdown(){
+          const btn = document.getElementById('themeDropdownBtn');
+          const dd = document.getElementById('themeDropdown');
+          if (!dd) return;
+          const opened = dd.style.display === 'block';
+          dd.style.display = opened ? 'none' : 'block';
+          btn?.setAttribute('aria-expanded', opened ? 'false' : 'true');
+          if (!opened) { buildThemePicker(); setupHighContrastToggle(); }
+        }
+        window.toggleThemeDropdown = toggleThemeDropdown;
+        document.getElementById('themeDropdownBtn')?.addEventListener('click', toggleThemeDropdown);
+        document.addEventListener('click', (ev) => {
+          const dd = document.getElementById('themeDropdown');
+          const btn = document.getElementById('themeDropdownBtn');
+          if (!dd || dd.style.display !== 'block') return;
+          if (!dd.contains(ev.target) && ev.target !== btn) {
+            dd.style.display = 'none';
+            btn?.setAttribute('aria-expanded', 'false');
+          }
+        });
+        document.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape') {
+            const dd = document.getElementById('themeDropdown');
+            const btn = document.getElementById('themeDropdownBtn');
+            if (dd && dd.style.display === 'block') {
+              dd.style.display = 'none';
+              btn?.setAttribute('aria-expanded', 'false');
+              btn?.focus();
+            }
+          }
+        });
+      })();
+    </script>
     <script src="assets/js/liquid-glass.js"></script>
 </body>
 </html>

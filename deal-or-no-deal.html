@@ -81,6 +81,14 @@
             box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
         }
 
+        /* Inline icons for value type and attachments */
+        .value-item .value-icons {
+            margin-left: 6px;
+            font-size: 13px;
+            display: inline-block;
+            vertical-align: baseline;
+        }
+
         /* Center Column - Cases and Controls */
         .game-panel {
             background: rgba(0, 0, 0, 0.8);
@@ -684,7 +692,7 @@
             <!-- Max prize input removed: max winnings amount is configured only in game-master-settings.html -->
 
             <div class="offer-section">
-                <input type="number" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($)" min="0" step="100">
+                <input type="text" class="offer-input" id="manualOffer" placeholder="Enter Banker's Offer ($ or text)">
                 <button id="setOfferBtn" class="set-offer-btn" onclick="setManualOffer()">
                     <img class="icon" src="assets/images/icons/offer.svg" alt="Offer"> SET OFFER
                 </button>
@@ -874,6 +882,18 @@
         }
 
         // Initialize the game
+        // Flexible value parser: returns number when numeric-like, otherwise trimmed text
+        function parseValueFlex(raw) {
+            try {
+                const s = String(raw ?? '').trim();
+                if (s === '') return 0;
+                const num = parseCurrencyInput(s);
+                if (isFinite(num)) return Math.round(num * 100) / 100;
+                return s;
+            } catch (_) {
+                return 0;
+            }
+        }
         function initializeGame() {
             // Load Game Master Settings first
             loadGameMasterSettings();
@@ -909,7 +929,7 @@
             if (hasOverride) {
                 // Build values directly from override, respecting numCases
                 const override = gameMasterSettings.customValuesOverride.slice(0, numCases);
-                values = override.map(v => parseAmountToDollars(v));
+                values = override.map(v => parseValueFlex(v));
             } else {
                 // Default all values to $0.00 until Game Master updates
                 values = Array.from({ length: numCases }, () => 0);
@@ -982,28 +1002,77 @@
             const valuesGrid = document.getElementById('valuesGrid');
             valuesGrid.innerHTML = '';
 
-            // Sort all values high → low for display
-            const sortedValues = [...gameState.values].sort((a, b) => b - a);
+            // Split values into numeric and text for predictable ordering
+            const numericValues = gameState.values.filter(v => typeof v === 'number' && isFinite(v));
+            const textValues = gameState.values.filter(v => !(typeof v === 'number' && isFinite(v)));
+
+            const sortedNumeric = numericValues.slice().sort((a, b) => b - a);
+            const sortedText = textValues.slice().map(v => String(v)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+            const displayValues = [...sortedNumeric, ...sortedText];
 
             // Build remaining counts map to handle duplicates precisely
-            const keyOf = (v) => Number.isFinite(v) ? Number(v.toFixed(2)).toString() : String(v);
+            const keyOf = (v) => (typeof v === 'number' && isFinite(v)) ? Number(v.toFixed(2)).toString() : String(v);
             const remainingCounts = {};
             gameState.remainingValues.forEach(v => {
                 const k = keyOf(v);
                 remainingCounts[k] = (remainingCounts[k] || 0) + 1;
             });
 
-            sortedValues.forEach((value, index) => {
+            displayValues.forEach((value, index) => {
                 const k = keyOf(value);
                 const count = remainingCounts[k] || 0;
 
                 const valueItem = document.createElement('div');
                 valueItem.className = 'value-item';
                 valueItem.textContent = formatCurrency(value);
+
+                // Append inline icon indicators for value type and attachments
+                const icons = document.createElement('span');
+                icons.className = 'value-icons';
+                const isNum = (typeof value === 'number' && isFinite(value));
+                // Type icon: $ for numeric, 🔤 for text
+                icons.textContent = isNum ? '$' : '🔤';
+
+                // Attachment indicators: check any case that holds this value and has attachments
+                try {
+                    const key = (v) => (typeof v === 'number' && isFinite(v)) ? Number(v.toFixed(2)).toString() : String(v);
+                    const targetKey = key(value);
+                    const hasAttachmentForValue = gameState.cases.some(c => {
+                        const ck = key(c.value);
+                        if (ck !== targetKey) return false;
+                        const conf = gameMasterSettings?.customCaseContent?.[c.number];
+                        return !!(conf && (conf.image || conf.sound || conf.text || conf.video));
+                    });
+                    if (hasAttachmentForValue) {
+                        // Use a compact camera/music/page/video combo indicator
+                        const attachIcons = [];
+                        // Aggregate present types across matching cases
+                        const typesPresent = { img: false, snd: false, txt: false, vid: false };
+                        gameState.cases.forEach(c => {
+                            const ck = key(c.value);
+                            if (ck !== targetKey) return;
+                            const conf = gameMasterSettings?.customCaseContent?.[c.number];
+                            if (!conf) return;
+                            if (conf.image) typesPresent.img = true;
+                            if (conf.sound) typesPresent.snd = true;
+                            if (conf.text) typesPresent.txt = true;
+                            if (conf.video) typesPresent.vid = true;
+                        });
+                        if (typesPresent.img) attachIcons.push('📷');
+                        if (typesPresent.snd) attachIcons.push('🔊');
+                        if (typesPresent.txt) attachIcons.push('📝');
+                        if (typesPresent.vid) attachIcons.push('🎬');
+                        if (attachIcons.length) {
+                            icons.textContent += ' ' + attachIcons.join('');
+                        }
+                    }
+                } catch (_) {}
+
+                valueItem.appendChild(icons);
                 valueItem.dataset.index = String(index);
 
                 if (count > 0) {
-                    // Consume one remaining instance
                     remainingCounts[k] = count - 1;
                 } else {
                     valueItem.classList.add('eliminated');
@@ -1285,25 +1354,25 @@
                 return;
             }
 
-            const manualOffer = parseCurrencyInput(manualOfferInput ? manualOfferInput.value : null);
+            const raw = manualOfferInput ? manualOfferInput.value : '';
+            const trimmed = String(raw).trim();
 
-            // Only allow manual offers - no automatic generation
-            if (!manualOffer || manualOffer <= 0) {
+            // Only allow manual offers - text or number
+            if (!trimmed) {
                 document.getElementById('gameStatus').textContent = 'Please enter a manual offer first';
                 return;
             }
 
-            const offerAmount = manualOffer;
+            const parsed = parseCurrencyInput(trimmed);
+            const offerAmount = isFinite(parsed) ? parsed : trimmed; // accept text when not numeric
+
             manualOfferInput.value = ''; // Clear input
 
-            // No duplicate-offer branch here; handled at the top now
             console.log('Setting offer for this round');
             gameState.offerMadeThisRound = true;
 
-            // Show offer to player (in real implementation, this would be on a separate display)
             document.getElementById('gameStatus').textContent = `Banker's Offer: ${formatCurrency(offerAmount)} — Make Your Decision below`;
 
-            // Add to history
             const offerData = {
                 round: gameState.currentRound,
                 offer: offerAmount,
@@ -1312,14 +1381,11 @@
 
             gameState.offerHistory.push(offerData);
 
-            // Debug logging
             console.log('Offer added to history:', offerData);
             console.log('Current history array:', gameState.offerHistory);
 
             updateHistory();
 
-            // Show decision buttons
-            console.log('Calling showDecisionButtons()');
             showDecisionButtons();
         }
 
@@ -1535,8 +1601,8 @@
 
             if (reason === 'ACCEPTED') {
                 const lastOffer = gameState.offerHistory[gameState.offerHistory.length - 1];
-                const offerAmt = lastOffer && typeof lastOffer.offer === 'number' ? lastOffer.offer : 0;
-                document.getElementById('gameStatus').textContent = `SHILL! Player accepted ${formatCurrency(offerAmt)}`;
+                const offerDisplay = lastOffer ? formatCurrency(lastOffer.offer) : '$0';
+                document.getElementById('gameStatus').textContent = `SHILL! Player accepted ${offerDisplay}`;
             } else {
                 // Reveal player's case
                 const playerCaseData = gameState.cases.find(c => c.number === gameState.playerCase);
@@ -1578,13 +1644,14 @@
 
         // Format currency (robust against null/undefined)
         function formatCurrency(amount) {
-            if (typeof amount !== 'number' || !isFinite(amount)) {
-                return '$0';
+            if (typeof amount === 'number' && isFinite(amount)) {
+                if (amount < 1) {
+                    return `$${amount.toFixed(2)}`;
+                }
+                return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
             }
-            if (amount < 1) {
-                return `$${amount.toFixed(2)}`;
-            }
-            return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+            const s = String(amount ?? '');
+            return s === '' ? '$0' : s;
         }
 
         // Parse inputs like "$1,000" or "1,000" into a number

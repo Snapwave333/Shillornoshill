@@ -19,6 +19,10 @@ Highlights
     Runs in a web browser or as a Windows desktop app via Electron.
     Randomize case positions and reusable templates for rapid session setup.
 
+> Electron is like a browser that decided to get a job.
+> Banker tip: Never take the first offer unless it's pizza.
+> This README is smoother than a fresh Windows install.
+
 ## Quick Start
 ### Run in your browser (local)
 

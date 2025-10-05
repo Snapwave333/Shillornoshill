@@ -68,3 +68,8 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
 ## v2.0.4 — Stable
 - See RELEASE_NOTES.md for detailed changes.
 
+## v2.0.5 — Stable
+- Fix: prevent case value grid resetting to 0 after saving via Case Wizard.
+- Add local preview server script (static-server.ps1) for consistent testing.
+- Auto-updater release notes improvements and tagging flow.
+

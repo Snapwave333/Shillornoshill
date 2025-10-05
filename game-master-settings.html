@@ -606,6 +606,7 @@
             <button class="action-btn" id="saveSettingsBtn" onclick="saveSettings()">Save Settings</button>
             <button class="action-btn" onclick="launchGame()">Launch Game</button>
             <button class="action-btn secondary" onclick="exportSettings()">Export Settings</button>
+            <button class="action-btn" onclick="checkForUpdates()">🔄 Check for Updates</button>
             <button class="action-btn" id="randomizeCasePositionsBtn" onclick="randomizeCasePositions()">🎲 Randomize Case Positions</button>
             <button class="action-btn" id="saveTemplateBtn" onclick="saveSettingsAsTemplate()">💾 Save as Template</button>
             <button class="action-btn secondary" id="loadTemplateBtn" onclick="triggerTemplateUpload()">📂 Load Template</button>
@@ -2057,6 +2058,42 @@
             const orig = saveBtn.textContent;
             saveBtn.textContent = '✅ SAVED';
             setTimeout(() => { saveBtn.textContent = orig; closeCaseWizard(); }, 900);
+        }
+
+        // ===== CHECK FOR UPDATES FUNCTION =====
+        async function checkForUpdates() {
+            try {
+                const currentVersion = '2.0.5';
+                const response = await fetch('https://api.github.com/repos/Snapwave333/Shillornoshill_public/releases/latest');
+                if (!response.ok) {
+                    throw new Error('Network response not ok: ' + response.status);
+                }
+                const data = await response.json();
+                const latestTag = data.tag_name; // e.g., 'v2.0.6'
+                const latestVersion = latestTag.replace(/^v/, '');
+                if (latestVersion && latestVersion !== currentVersion) {
+                    // Compare versions simply (may not handle alphas but assumes semantic)
+                    const latestParts = latestVersion.split('.').map(Number);
+                    const currentParts = currentVersion.split('.').map(Number);
+                    let isNewer = false;
+                    for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+                        const lv = latestParts[i] || 0;
+                        const cv = currentParts[i] || 0;
+                        if (lv > cv) { isNewer = true; break; }
+                        if (lv < cv) break;
+                    }
+                    if (isNewer) {
+                        showToast('Update Available', `Version ${latestTag} is available. Check https://github.com/Snapwave333/Shillornoshill_public/releases`);
+                    } else {
+                        showToast('Up to Date', 'You are running the latest version.');
+                    }
+                } else {
+                    showToast('Up to Date', 'You are running the latest version.');
+                }
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+                showToast('Update Check Failed', 'Unable to check for updates. Please try again later.');
+            }
         }
 
         // Initialize when page loads

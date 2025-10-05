@@ -6,18 +6,24 @@ Shill Or No Shill is a desktop application designed to help users make informed 
 
 ## Features
 
-*   **Decision Support:** Get insights into potential shills.
+*   **Decision Support:** Get insights into potential shills in finance, social media influence, and general sentiment.
+*   **Randomize Case Positions:** Button in Settings to shuffle display order without changing case values.
+*   **Template Save/Load System:** Save current configuration to a JSON template and load it later.
+*   **Liquid Glass Theme:** Integrated for Settings and modals for a modern UI.
 *   **User-Friendly Interface:** Easy to navigate and understand.
 *   **Cross-Platform:** Available on Windows.
 
 ## Installation
 
-To install the latest stable release of Shill Or No Shill, please visit the [Releases page](https://github.com/Snapwave333/Shillornoshill_public/releases) on GitHub and download the appropriate installer for your operating system.
+To install the latest stable release of Shill Or No Shill, please visit the [Releases page](https://github.com/Snapwave333/Shillornoshill_public/releases) and download the appropriate installer for your operating system.
 
 ## How to Use
 
 1.  Launch the application.
-2.  [Further instructions on how to use the app will go here]
+2.  Configure your settings in the Settings panel.
+3.  Use the randomize button to shuffle case positions.
+4.  Save and load custom templates for different scenarios.
+5.  Enjoy the Liquid Glass themed interface.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 {
   "name": "shill-or-no-shill-app",
-  "version": "1.4.3",
+  "version": "2.0.4",
   "description": "Shill Or No Shill packaged as a Windows desktop app",
   "main": "electron/main.js",
   "author": "",
@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "release": "electron-builder --win --publish always",
+    "release": "electron-builder --win nsis --publish always",
     "pretag": "npm run notes && node scripts/verify-version-docs.js",
     "tag": "node scripts/tag-version.js",
     "notes": "node scripts/generate-release-notes.js",
@@ -42,7 +42,7 @@
       {
         "provider": "github",
         "owner": "Snapwave333",
-        "repo": "Shillornoshill"
+        "repo": "Shillornoshill_public"
       }
     ],
     "win": {

@@ -24,10 +24,12 @@ try {
     $xfArgs = $excludeFiles | ForEach-Object { "/XF", $_ }
     $commonArgs = @("/MIR","/NFL","/NDL","/NJH","/NJS","/NP","/MT:8")
 
-    $args = @($root, $tempDir) + $commonArgs + $xdArgs + $xfArgs
-    $robocopy = Start-Process -FilePath "robocopy.exe" -ArgumentList $args -NoNewWindow -Wait -PassThru
-    # Robocopy exit codes: 0-7 are success/warnings
-    if ($robocopy.ExitCode -gt 7) { throw "Robocopy failed with exit code $($robocopy.ExitCode)" }
+    $cmdArgs = @($root, $tempDir) + $commonArgs + $xdArgs + $xfArgs
+    # Use call operator to pass arguments safely (handles spaces in paths)
+    $null = & robocopy.exe @cmdArgs
+    $exitCode = $LASTEXITCODE
+    # Robocopy exit codes: 0-7 are success/warnings; >7 indicates failure
+    if ($exitCode -gt 7) { throw "Robocopy failed with exit code $exitCode" }
 
     # Create zip from temp directory
     $zipPath = Join-Path $backupDir $zipName

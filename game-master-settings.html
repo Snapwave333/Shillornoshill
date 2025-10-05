@@ -1036,6 +1036,29 @@
             });
 
             // Build a compact table and charts
+            const caseCount = Math.max(10, Math.min(50, gameSettings.numberOfCases));
+            let caseValuesStr = '';
+            for (let i = 1; i <= caseCount; i++) {
+                const idx = i - 1;
+                let valueStr = '0.00';
+                if (gameSettings.useCustomValues && Array.isArray(gameSettings.customValuesOverride) && gameSettings.customValuesOverride.length > idx) {
+                    valueStr = gameSettings.customValuesOverride[idx] || '0.00';
+                } else {
+                    if (scaledValues.length > idx) {
+                        valueStr = scaledValues[idx].toString();
+                    }
+                }
+                const conf = gameSettings.customCaseContent && gameSettings.customCaseContent[i];
+                const mediaIcons = [];
+                if (conf) {
+                    if (conf.image) mediaIcons.push('📷');
+                    if (conf.sound) mediaIcons.push('🔊');
+                    if (conf.video) mediaIcons.push('🎬');
+                }
+                const textSnippet = (conf && conf.text) ? (conf.text.length > 15 ? conf.text.substring(0, 15) + '...' : conf.text) : '';
+                caseValuesStr += `<div style="margin: 4px 0; font-size: 0.8rem;">Case ${i}: ${valueStr} ${mediaIcons.join('')} ${textSnippet ? ' "' + textSnippet + '"' : ''}</div>`;
+            }
+
             summary.innerHTML = `
                 <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Overview</div>
                 <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
@@ -1062,9 +1085,15 @@
                             <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Zero-Amount Traps</td>
                             <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.zeroAmountCases}</td>
                         </tr>
-                        
+
                     </tbody>
                 </table>
+
+                <!-- Case Values Summary -->
+                <div style="margin-top: 20px; font-weight: 600; color: #ffea00; margin-bottom: 10px;">Case Values Summary</div>
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; font-family: monospace; font-size: 0.9rem; line-height: 1.6; color: #fff; max-height: 200px; overflow-y: auto;">
+                    ${caseValuesStr}
+                </div>
                 <!-- Charts removed from Configuration Preview -->
             `;
 

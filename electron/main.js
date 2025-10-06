@@ -440,6 +440,22 @@ ipcMain.handle('win:close', () => {
   if (win) win.close();
 });
 
+// Expose app version to renderer via IPC
+ipcMain.handle('app:getVersion', () => {
+  try { return app.getVersion(); } catch { return '0.0.0'; }
+});
+
+// Allow renderer to trigger an update check (non-blocking)
+ipcMain.handle('updater:check', async () => {
+  try {
+    autoUpdater.checkForUpdates();
+    return { ok: true };
+  } catch (e) {
+    log.error('Updater: renderer-triggered check failed', e);
+    return { ok: false, error: String(e) };
+  }
+});
+
 // Single instance lock to route protocol/args
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {

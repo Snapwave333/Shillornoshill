@@ -73,3 +73,6 @@ Notes: If the AI SVG is missing, the icon generation gracefully falls back to th
 - Add local preview server script (static-server.ps1) for consistent testing.
 - Auto-updater release notes improvements and tagging flow.
 
+## v3.0.0 — Stable
+- See RELEASE_NOTES.md for detailed changes.
+

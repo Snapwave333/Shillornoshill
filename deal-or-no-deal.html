@@ -1027,49 +1027,7 @@
                 valueItem.className = 'value-item';
                 valueItem.textContent = formatCurrency(value);
 
-                // Append inline icon indicators for value type and attachments
-                const icons = document.createElement('span');
-                icons.className = 'value-icons';
-                const isNum = (typeof value === 'number' && isFinite(value));
-                // Type icon: $ for numeric, 🔤 for text
-                icons.textContent = isNum ? '$' : '🔤';
 
-                // Attachment indicators: check any case that holds this value and has attachments
-                try {
-                    const key = (v) => (typeof v === 'number' && isFinite(v)) ? Number(v.toFixed(2)).toString() : String(v);
-                    const targetKey = key(value);
-                    const hasAttachmentForValue = gameState.cases.some(c => {
-                        const ck = key(c.value);
-                        if (ck !== targetKey) return false;
-                        const conf = gameMasterSettings?.customCaseContent?.[c.number];
-                        return !!(conf && (conf.image || conf.sound || conf.text || conf.video));
-                    });
-                    if (hasAttachmentForValue) {
-                        // Use a compact camera/music/page/video combo indicator
-                        const attachIcons = [];
-                        // Aggregate present types across matching cases
-                        const typesPresent = { img: false, snd: false, txt: false, vid: false };
-                        gameState.cases.forEach(c => {
-                            const ck = key(c.value);
-                            if (ck !== targetKey) return;
-                            const conf = gameMasterSettings?.customCaseContent?.[c.number];
-                            if (!conf) return;
-                            if (conf.image) typesPresent.img = true;
-                            if (conf.sound) typesPresent.snd = true;
-                            if (conf.text) typesPresent.txt = true;
-                            if (conf.video) typesPresent.vid = true;
-                        });
-                        if (typesPresent.img) attachIcons.push('📷');
-                        if (typesPresent.snd) attachIcons.push('🔊');
-                        if (typesPresent.txt) attachIcons.push('📝');
-                        if (typesPresent.vid) attachIcons.push('🎬');
-                        if (attachIcons.length) {
-                            icons.textContent += ' ' + attachIcons.join('');
-                        }
-                    }
-                } catch (_) {}
-
-                valueItem.appendChild(icons);
                 valueItem.dataset.index = String(index);
 
                 if (count > 0) {

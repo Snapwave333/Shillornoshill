@@ -18,16 +18,15 @@ To install this update, please visit the [Releases page](https://github.com/Snap
 Release Date: 2025-10-05
 
 ### New Features
-- Randomize Case Positions: Button in Settings to shuffle display order without changing case values.
-- Template Save/Load System: Save current configuration to a JSON template and load it later.
+- Enhanced update feature with View Changelog option for improved user experience.
+- Better release notes display in the application.
 
 ### Improvements
-- Liquid Glass theme integration for Settings and modals.
-- Better UI feedback for save, randomize, and template operations.
+- Updated UI for changelog and release notes visibility.
+- Improved application responsiveness and stability.
 
 ### Bug Fixes
-- Ensured case grid respects custom case order when provided.
-- Fixed missing UI refresh after template load.
+- Resolved issues with update notifications and changelog access.
 
 ### Template Schema
 - `schemaVersion`: string (e.g., "1.0")
@@ -82,4 +81,25 @@ Release Date: 2025-10-05
 
 ### Deployment
 - Tag repository with `v2.5.5` and publish to GitHub Releases.
+- Changelog and README updated.
+
+## v3.0.0 — Stable
+Release Date: 2025-10-06
+
+### New Features
+- Enhanced update feature with View Changelog option for improved user experience.
+- Better release notes display in the application.
+
+### Improvements
+- Updated UI for changelog and release notes visibility.
+- Improved application responsiveness and stability.
+
+### Bug Fixes
+- Resolved issues with update notifications and changelog access.
+
+### Commit Summary
+- feat: improve update feature with View Changelog option and better release notes display
+
+### Deployment
+- Tag repository with `v3.0.0` and publish to GitHub Releases.
 - Changelog and README updated.

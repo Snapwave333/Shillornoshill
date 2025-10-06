@@ -7,6 +7,16 @@ contextBridge.exposeInMainWorld('windowControls', {
   close: () => ipcRenderer.invoke('win:close'),
 });
 
+"e// Expose app metadata
+contextBridge.exposeInMainWorld('app', {
+  getVersion: () => ipcRenderer.invoke('app:getVersion'),
+});
+
+// Expose updater controls
+contextBridge.exposeInMainWorld('updates', {
+  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+});
+
 // Expose desktop theme/accent API for Liquid Glass
 contextBridge.exposeInMainWorld('desktopTheme', {
   async getAccentColor(){

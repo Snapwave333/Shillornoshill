@@ -674,20 +674,7 @@
                     </div>
                 </div>
 
-                <!-- Max $ Amount Boxes -->
-                <div class="setting-group">
-                    <label class="setting-label">
-                        High-Value Cases
-                    </label>
-                    <div class="setting-description">
-                        The number of high-value cases ($1,000 and up) to include in the randomized pool.
-                    </div>
-                    <div class="stepper">
-                        <button class="stepper-btn" onclick="changeValue('maxDollarBoxes', -1)">-</button>
-                        <span class="stepper-value" id="maxDollarBoxes">5</span>
-                        <button class="stepper-btn" onclick="changeValue('maxDollarBoxes', 1)">+</button>
-                    </div>
-                </div>
+
 
                 <!-- Zero-Amount Cases -->
                 <div class="setting-group">
@@ -736,57 +723,7 @@
                     <input type="text" class="setting-input" id="caseSequence" value="6, 5, 4, 3, 2, 1" placeholder="e.g., 5, 3, 2, 1, 1">
                 </div>
 
-                <!-- Case Media Attachments -->
-                <div class="setting-group lg-glass" id="caseMediaAttachments">
-                    <label class="setting-label">Case Media Attachments</label>
-                    <div class="setting-description">
-                        Attach images (including GIFs) and custom sound effects to specific cases. These will display in a popup when that case is opened during gameplay.
-                    </div>
 
-                    <div class="custom-case-config">
-                        <div class="case-selector">
-                            <label>Case Number:</label>
-                            <select class="setting-input" id="caseSelector" onchange="loadCaseConfig()">
-                                <option value="">Select a case...</option>
-                            </select>
-                        </div>
-
-                        <div class="case-customization" id="caseCustomization" style="display: none;">
-                            <div class="file-input-group">
-                                <label>Case Image:</label>
-                                <input type="file" id="caseImage" accept="image/*" onchange="previewCaseImage(this)">
-                                <div class="file-preview" id="imagePreview" style="display: none;">
-                                    <img id="previewImg" src="" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
-                                    <button type="button" onclick="clearCaseImage()">Remove</button>
-                                </div>
-                            </div>
-
-                            <div class="file-input-group">
-                                <label>Sound Effect:</label>
-                                <input type="file" id="caseSound" accept="audio/*" onchange="previewCaseSound(this)">
-                                <div class="file-preview" id="soundPreview" style="display: none;">
-                                    <audio id="previewAudio" controls style="max-width: 200px;"></audio>
-                                    <button type="button" onclick="clearCaseSound()">Remove</button>
-                                </div>
-                            </div>
-
-                            <div class="case-actions">
-                                <button class="action-btn-small" onclick="saveCaseConfig()">Save Case Config</button>
-                                <button class="action-btn-small secondary" onclick="clearCaseConfig()">Clear Config</button>
-                                <button class="action-btn-small" onclick="(function(){ const n = parseInt(document.getElementById('caseSelector').value); if (!n) { alert('Select a case to customize.'); return; } openCaseWizard(n); })()">Customize Wizard</button>
-                                <button class="action-btn-small" onclick="testCasePopup()">Test Popup</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="configured-cases" id="configuredCases">
-                        <h4>Configured Cases:</h4>
-                        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
-                            <button class="action-btn-small secondary" onclick="clearAllConfiguredCases()">Clear All Configured Cases</button>
-                        </div>
-                        <div id="casesList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
-                    </div>
-                </div>
 
                 <!-- Banker Offer Aggressiveness -->
                 <!-- Banker settings removed -->
@@ -1043,8 +980,22 @@
         // Update case opening sequence
         function updateCaseSequence() {
             const input = document.getElementById('caseSequence');
-            const sequence = input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-            gameSettings.caseOpeningSequence = sequence.length > 0 ? sequence : [6, 5, 4, 3, 2, 1];
+            const rawValue = input.value.trim();
+            if (!rawValue) {
+                gameSettings.caseOpeningSequence = [6, 5, 4, 3, 2, 1];
+                updateSettingsSummary();
+                return;
+            }
+            const sequence = rawValue.split(',')
+                .map(s => parseInt(s.trim()))
+                .filter(n => Number.isInteger(n) && n > 0);
+            if (sequence.length === 0) {
+                // Invalid input, show feedback and keep default
+                showToast('Invalid Sequence', 'Please enter positive integers separated by commas.', 3000);
+                input.focus();
+                return;
+            }
+            gameSettings.caseOpeningSequence = sequence;
             updateSettingsSummary();
         }
 
@@ -1094,39 +1045,44 @@
             }
 
             summary.innerHTML = `
-                <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Overview</div>
-                <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Metric</th>
-                            <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Max Prize Amount</td>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${isFinite(max) ? ('$' + max.toLocaleString()) : '$100'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Total Cases</td>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.numberOfCases}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">High-Value Cases (≥$1,000)</td>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.maxDollarBoxes}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Zero-Amount Traps</td>
-                            <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.zeroAmountCases}</td>
-                        </tr>
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Overview</div>
+                        <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Metric</th>
+                                    <th style="text-align: left; padding: 8px 12px; background: linear-gradient(90deg, rgba(255,0,255,0.18), rgba(255,255,0,0.18)); border-bottom: 1px solid rgba(255,255,255,0.2);">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Max Prize Amount</td>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${isFinite(max) ? ('$' + max.toLocaleString()) : '$100'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Total Cases</td>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.numberOfCases}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">High-Value Cases (≥$1,000)</td>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.maxDollarBoxes}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">Zero-Amount Traps</td>
+                                    <td style="padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.08);">${gameSettings.zeroAmountCases}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                    </tbody>
-                </table>
-
-                <!-- Case Values Summary -->
-                <div style="margin-top: 20px; font-weight: 600; color: #ffea00; margin-bottom: 10px;">Case Values Summary</div>
-                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; font-family: monospace; font-size: 0.9rem; line-height: 1.6; color: #fff; max-height: 200px; overflow-y: auto;">
-                    ${caseValuesStr}
+                    <div style="flex: 1;">
+                        <!-- Case Values Summary -->
+                        <div style="margin-bottom: 12px; font-weight: 600; color: #ffea00;">Case Values Summary</div>
+                        <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; font-family: monospace; font-size: 0.9rem; line-height: 1.6; color: #fff; max-height: 200px; overflow-y: auto;">
+                            ${caseValuesStr}
+                        </div>
+                    </div>
                 </div>
                 <!-- Charts removed from Configuration Preview -->
             `;
@@ -1316,8 +1272,15 @@
                 const el = document.getElementById(`caseValueInput_${i}`);
                 if (!el) continue;
                 const raw = (el.value || '').trim();
-                if (raw === '') { errors.push(`Case ${i} is empty`); continue; }
-                // Accept numeric-like and text values; only reject empty
+                if (raw === '') {
+                    errors.push(`Case ${i} is empty`);
+                    continue;
+                }
+                // Validate: only letters, numbers, and spaces allowed
+                if (!/^[a-zA-Z0-9\s]*$/.test(raw)) {
+                    errors.push(`Case ${i} contains invalid characters (only letters, numbers, and spaces are allowed)`);
+                    continue;
+                }
                 values.push(raw); // store raw string verbatim (number-like handled at runtime)
             }
 
@@ -2107,7 +2070,21 @@
         // ===== CHECK FOR UPDATES FUNCTION =====
         async function checkForUpdates() {
             try {
-                const currentVersion = '2.0.5';
+                // Trigger native updater flow via IPC
+                if (window.updates?.checkForUpdates) {
+                    // Fire-and-forget; native updater will emit notifications/prompts
+                    window.updates.checkForUpdates();
+                }
+
+                // Get app version from Electron instead of hardcoding
+                let currentVersion = '0.0.0';
+                try {
+                    if (window.app?.getVersion) {
+                        currentVersion = await window.app.getVersion();
+                    }
+                } catch {}
+
+                // Also query GitHub to provide immediate feedback in the settings UI
                 const response = await fetch('https://api.github.com/repos/Snapwave333/Shillornoshill_public/releases/latest');
                 if (!response.ok) {
                     throw new Error('Network response not ok: ' + response.status);
@@ -2127,12 +2104,12 @@
                         if (lv < cv) break;
                     }
                     if (isNewer) {
-                        showToast('Update Available', `Version ${latestTag} is available. Check https://github.com/Snapwave333/Shillornoshill_public/releases`);
+                        showToast('Update Available', `Version ${latestTag} is available. The in-app updater is checking now.`);
                     } else {
-                        showToast('Up to Date', 'You are running the latest version.');
+                        showToast('Up to Date', `You are running the latest version (${currentVersion}).`);
                     }
                 } else {
-                    showToast('Up to Date', 'You are running the latest version.');
+                    showToast('Up to Date', `You are running the latest version (${currentVersion}).`);
                 }
             } catch (error) {
                 console.error('Error checking for updates:', error);
